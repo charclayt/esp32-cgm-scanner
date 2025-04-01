@@ -5,7 +5,7 @@
 
 namespace cgm {
 
-std::vector<uint8_t> decryptFRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encryptedData) {
+std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encryptedData) {
     std::vector<uint8_t> result;
     result.reserve((sizeof(uint8_t) * 8) * 43);
 

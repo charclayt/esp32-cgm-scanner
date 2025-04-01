@@ -1,5 +1,5 @@
-#ifndef CGM_DECRYPT_H
-#define CGM_DECRYPT_H
+#ifndef __CGM_DECRYPT_HPP__
+#define __CGM_DECRYPT_HPP__
 
 #include <vector>
 #include <cstdint>
@@ -20,7 +20,7 @@ static const std::vector<uint16_t> keys = {0xA0C5, 0x6860, 0x0000, 0x14C6};
  * @param encryptedData the encrypted FRAM data
  * @return `std::vector<uint8_t>` - the decrypted FRAM data
  */
-std::vector<uint8_t> decryptFRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encryptedData);
+std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encryptedData);
 
 /**
  * @brief 
@@ -42,4 +42,4 @@ std::vector<uint16_t> processCrypto(const std::vector<uint16_t>& input);
 
 } // namespace cgm
 
-#endif // CGM_DECRYPT_H
+#endif // __CGM_DECRYPT_HPP__

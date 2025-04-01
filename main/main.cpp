@@ -5,15 +5,20 @@
 
 // CGM includes
 #include "decrypt.hpp"
-#include "types.hpp"
+#include "sensor/sensor_types.hpp"
+#include "sensor/sensor_region.hpp"
+#include "sensor/sensor_state.hpp"
+#include "sensor/sensor_serial.hpp"
 #include "nfc.hpp"
-#include "sensor.hpp"
+#include "sensor/sensor.hpp"
 #include "crc.hpp"
+#include "fram.hpp"
 
 #include <esp_task_wdt.h>
 
 #include <stdio.h>
 #include <memory>
+#include <format>
 
 
 #define WDT_TIMEOUT 5 //5 seconds WDT
@@ -34,8 +39,8 @@ std::unique_ptr<cgm::sensor> sensor;
 
 
 void setup() {
-    Serial.begin(115200);
     pinMode(relayPin, OUTPUT);
+    Serial.begin(115200);
     digitalWrite(relayPin, relayState);
     delay(500);
 
@@ -68,6 +73,7 @@ void loop() {
         sensor = std::make_unique<cgm::sensor>();
         sensor->set_UID(uid);
     }
+    std::vector<uint8_t> uid_vector(uid, uid + sizeof(uid));
     
     // If the result code was that a card had been read, and is TI tag
     if (rc == ISO15693_EC_OK && uid[6] == cgm::TEXAS_INSTRUMENTS) {
@@ -107,23 +113,27 @@ void loop() {
             Serial.println(numBlocks);
         }
 
-        // /// Read FRAM Blocks ///
-        // uint8_t readBuffer[blockSize];
-        // uint8_t numFRAMBlocks = 43;
+        /// Get patch info ///
+        // std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
+        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X16, 0X0A};
 
-        // std::vector<uint8_t> dataVector;
-        // dataVector.reserve(numFRAMBlocks * blockSize);
+        // Check sensor is Libre 2 EU
+        if (cgm::get_sensor_type(patch_info) == cgm::sensorType::LIBRE2EU) {
+            Serial.println("Sensor is Libre 2 EU");
+        } else {
+            Serial.println("Sensor is not Libre 2 EU");
+        }
 
-        // Read header of FRAM
 
-        std::vector<uint8_t> uid_vector(uid, uid + sizeof(uid));
-        std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-
+        /// Read sensor FRAM and decrypt ///
         std::vector<uint8_t> FRAM_vector;
         FRAM_vector.reserve(43 * blockSize);
-        cgm::readFRAM(nfc, uid_vector, blockSize, FRAM_vector);
 
-        auto decrypted_fram = cgm::decryptFRAM(uid_vector, patch_info, FRAM_vector);
+        cgm::read_FRAM(nfc, uid_vector, blockSize, FRAM_vector);
+
+        auto decrypted_fram = cgm::decrypt_FRAM(uid_vector, patch_info, FRAM_vector);
+
+        cgm::FRAM_data fram_struct(decrypted_fram);
 
         // // std::vector<uint8_t> headerVector;
         // // headerVector.reserve(3 * blockSize);
@@ -138,117 +148,57 @@ void loop() {
         // // }
 
         auto crc = cgm::check_CRC16(std::vector<uint8_t>(decrypted_fram.begin(), decrypted_fram.begin() + 24), 0);
+        // auto crc = cgm::check_CRC16(fram_struct.header_crc, 0);
         Serial.print("Header CRC match: ");
-        Serial.println(crc);
+        Serial.println(crc != 0);
 
         auto crc_body = cgm::check_CRC16(std::vector<uint8_t>(decrypted_fram.begin() + 24, decrypted_fram.begin() + 24 + 296), 1);
         Serial.print("Body CRC match: ");
-        Serial.println(crc_body);
+        Serial.println(crc_body != 0);
 
         auto crc_footer = cgm::check_CRC16(std::vector<uint8_t>(decrypted_fram.begin() + 24 + 296, decrypted_fram.begin() + 24 + 296 + 24), 2);
         Serial.print("Footer CRC match: ");
-        Serial.println(crc_footer);
-
-        // Read header of FRAM
+        Serial.println(crc_footer != 0);
 
 
-        // for (int num = 0; num < numFRAMBlocks; num++) {
-        //     rc = nfc.readSingleBlock(uid, num, readBuffer, blockSize);
+        /// TODO: stuff ///
+        if (decrypted_fram.size() >= 318) {
+            auto age = (int(decrypted_fram[316]) + int(decrypted_fram[317])) << 8;
+            Serial.print("Age: ");
+            Serial.println(age);
+        } else {
+            Serial.println("Error: decrypted_fram size is less than 318");
+        }
 
-        //     if (rc != ISO15693_EC_OK) {
-        //         Serial.print(F("Error in readSingleBlock #"));
-        //         Serial.print(num);
-        //         Serial.print(": ");
-        //         Serial.println(rc);
-        //     } else {
-        //         // Output block number in hex padded with leading zeros if required
-        //         Serial.print(F("Block "));
-        //         if (num < 0x10) Serial.print("0");
-        //         Serial.print(num, HEX);
+        auto state = cgm::get_sensor_state(decrypted_fram);
+        Serial.print("Sensor state: ");
+        Serial.println(cgm::to_string(state).c_str());
 
-        //         // Spacing
-        //         Serial.print("   ");
+        auto region = cgm::get_sensor_region(patch_info);
+        Serial.print("Sensor region: ");
+        Serial.println(cgm::to_string(region).c_str());
 
-        //         // Output block data in hex padded with leading zeros if required
-        //         for (int i = 0; i < blockSize; i++) {
-        //             // Add data to vector
-        //             dataVector.push_back(readBuffer[i]);
+        auto serial = cgm::get_sensor_serial_number(uid_vector, patch_info);
+        Serial.print("Sensor serial: ");
+        Serial.println(serial.c_str());
 
-        //             if (readBuffer[i] < 0x10) Serial.print("0");
-        //             Serial.print(readBuffer[i], HEX);
-        //             Serial.print(" ");
-        //         }
+        Serial.print("Trend pointer: ");
+        Serial.println(fram_struct.trend_index);
 
-        //         // Spacing
-        //         Serial.print("   ");
+        Serial.print("Historic pointer: ");
+        Serial.println(fram_struct.historic_index);
 
-        //         // Output block data in char
-        //         for (int i = 0; i < blockSize; i++) {
-        //             if (isprint(readBuffer[i])) {
-        //                 Serial.print((char)readBuffer[i]);
-        //             } else {
-        //                 Serial.print(".");
-        //             }
-        //         }
-        //     }
-        //     Serial.println();
-        // }
-
-
-        // /// Get patch info ///
-
-        // // uint8_t buffer[7];
-        // // uint8_t buffer[7] = {};
-        // // rc = nfc.getSensorInfo(uid, buffer);
-
-        // // Serial.print("Sensor info rc: ");
-        // // Serial.println(rc);
-
-        // // Throw away first byte
-        // std::vector<uint8_t> patchInfo(buffer + 1, buffer + sizeof(buffer));
-
-        // // std::vector<uint8_t> patchInfo = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-
-        // Serial.print("Buffer: ");
-        // for (const auto& byte : patchInfo) {
-        //     if (byte < 0x10) Serial.print("0");
-        //     Serial.print(byte, HEX);
-        //     Serial.print(" ");
-        // }
-        // Serial.println();
-
-
-        // /// Decrypt FRAM and check CRC ///
-        // std::vector<uint8_t> decryptedFRAM = cgm::decryptFRAM(uid, patchInfo, dataVector);
-
-        // // if (crc16(std::vector<uint8_t>(decryptedFRAM.begin() + 2, decryptedFRAM.begin() + 2 + (0x0B * 2))) == (decryptedFRAM[0] | decryptedFRAM[1] << 8)) {
-        // //   Serial.println("Header CRC OK");
-        // // } else {
-        // //   Serial.println("Header CRC ERROR");
-        // // }
-
-        // if (decryptedFRAM.size() >= 318) {
-        //     auto age = (int(decryptedFRAM[316]) + int(decryptedFRAM[317])) << 8;
-        //     Serial.print("Age: ");
-        //     Serial.println(age);
-        // } else {
-        //     Serial.println("Error: decryptedFRAM size is less than 318");
-        // }
-
-        // // Check sensor is Libre 2 EU
-        // if (cgm::getSensorType(patchInfo) == cgm::sensorType::LIBRE2EU) {
-        //     Serial.println("Sensor is Libre 2 EU");
-        // } else {
-        //     Serial.println("Sensor is not Libre 2 EU");
-        // }
-
-        // // Check header CRC
-        // // print_crc("Header CRC", std::vector<uint8_t>(decryptedFRAM.begin(), decryptedFRAM.begin() + 2),
-        // //                         std::vector<uint8_t>(decryptedFRAM.begin() + 2, decryptedFRAM.begin() + 2 + (0x0B * 2)));
-
-        // // // Check record CRC
-        // // print_crc("Record CRC", std::vector<uint8_t>(dataVector.begin() + 24, dataVector.begin() + 26),
-        // //                         std::vector<uint8_t>(dataVector.begin() + 26, dataVector.begin() + 26 + (0x93 * 2)));
+        Serial.println(std::format("Trend record {}", fram_struct.trend_index).c_str());
+        Serial.print("Error: ");
+        Serial.print(fram_struct.trend_records[fram_struct.trend_index - 1].has_error);
+        Serial.print(" Negative: ");
+        Serial.print(fram_struct.trend_records[fram_struct.trend_index - 1].negative);
+        Serial.print(" Raw glucose: ");
+        Serial.print(fram_struct.trend_records[fram_struct.trend_index - 1].raw_glucose);
+        Serial.print(" Raw temperature: ");
+        Serial.print(fram_struct.trend_records[fram_struct.trend_index - 1].raw_temperature);
+        Serial.print(" Temperature adjustment: ");
+        Serial.println(fram_struct.trend_records[fram_struct.trend_index - 1].temperature_adjustment);
 
         delay(1000);  
         } else { // If a card is not detected

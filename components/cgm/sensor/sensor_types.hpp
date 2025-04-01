@@ -1,8 +1,9 @@
-#ifndef CGM_TYPES_H
-#define CGM_TYPES_H
+#ifndef __CGM_TYPES_HPP__
+#define __CGM_TYPES_HPP__
 
 #include <vector>
 #include <cstdint>
+#include <string>
 
 namespace cgm {
 
@@ -29,11 +30,19 @@ enum class sensorType {
 /**
  * @brief Get the sensor type, based on given patchInfo
  * 
- * @param patchInfo the info from sending '0xA1' command to sensor
+ * @param patch_info the sensors patch info
  * @return `sensorType` - the sensor type
  */
-sensorType getSensorType(const std::vector<uint8_t>& patchInfo);
+sensorType get_sensor_type(const std::vector<uint8_t>& patch_info);
+
+/**
+ * @brief convert sensorType to string
+ * 
+ * @param type the sensor type to convert
+ * @return `std::string` - the string representation of the sensor type 
+ */
+std::string to_string(sensorType type);
 
 } // namespace cgm
 
-#endif // CGM_TYPES_H
+#endif // __CGM_TYPES_HPP__

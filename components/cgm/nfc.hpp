@@ -8,7 +8,7 @@
 
 namespace cgm {
 
-void readFRAM(PN5180ISO15693& nfc, std::vector<uint8_t>& uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
+void read_FRAM(PN5180ISO15693& nfc, std::vector<uint8_t>& uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
 
 /**
  * @brief 
