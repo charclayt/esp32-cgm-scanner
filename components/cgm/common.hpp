@@ -3,7 +3,8 @@
 
 namespace cgm {
 
-const auto FRAM_RECORD_SIZE = 6;
+const auto FRAM_RECORD_SIZE_BYTES = 6;
+const auto BLE_RECORD_SIZE_BYTES = 4;
 
 }
 

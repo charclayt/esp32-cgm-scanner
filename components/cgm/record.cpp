@@ -40,7 +40,7 @@ tttt tte- ---- ----
 
 fram_record::fram_record(const std::vector<uint8_t> record) {
     // Check if FRAM record is valid (6 bytes)
-    if (record.size() != FRAM_RECORD_SIZE) {
+    if (record.size() != FRAM_RECORD_SIZE_BYTES) {
         has_error = true;
         return;
     }
@@ -70,6 +70,55 @@ fram_record::fram_record(const std::vector<uint8_t> record) {
 
     // raw_glucose bits are now the final byte and the final 4 bits of byte 4 (bits 36-47)
     raw_glucose = ((input[4] & 0x0F) << 8) | input[5];
+}
+
+/*
+
+(pre-reversal) BLE record layout:
+
+gggg gggg gggg --tt
+tttt tttt ttaa aaan
+
+g = raw glucose
+t = raw temperature
+a = temperature adjustment
+n = negative
+
+(post-reversal) BLE record layout:
+
+naaa aatt tttt tttt
+tt-- gggg gggg gggg
+
+*/
+
+ble_record::ble_record(const std::vector<uint8_t> record) {
+    // check if BLE record is valid (4 bytes)
+    if (record.size() != BLE_RECORD_SIZE_BYTES) {
+        // TODO: error message / logging
+        return;
+    }
+
+    auto input = record;
+
+    // reverse the bytes in the record
+    std::reverse(input.begin(), input.end());
+
+    // reverse the bits in each byte
+    for (auto& byte : input) {
+        byte = reverse_bits(byte);
+    }
+
+    // negative bit is now the first bit (bit 0)
+    negative = (input[0] >> 7) & 0x01;
+
+    // temperature_adjustment bits are bits 1-5 of byte 0
+    temperature_adjustment = input[0] & 0x7C;
+
+    // raw_temperature bits are now the final 2 bits of byte 0, the entirety of byte 1, and the first 2 bits of byte 2 (bits 6-17)
+    raw_temperature = ((input[0] & 0x03) << 10) | (input[1] << 2) | (input[2] >> 6);
+
+    // raw_glucose bits are now the final byte and the final 4 bits of byte 3 (bits 20-31)
+    raw_glucose = ((input[3] & 0x0F) << 8) | input[4];
 }
 
 } // namespace cgm

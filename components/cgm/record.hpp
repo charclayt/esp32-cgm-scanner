@@ -7,7 +7,7 @@
 namespace cgm {
 
 /**
- * @brief 
+ * @brief a record read from the sensor FRAM containing glucose and temperature data
  * 
  */
 struct fram_record {
@@ -21,20 +21,20 @@ struct fram_record {
     /**
      * @brief Construct a new fram record object
      * 
-     * @param record 
+     * @param record the record to be parsed
      */
     fram_record(const std::vector<uint8_t> record);
 
-    bool has_error;
-    bool negative;
 
+    bool negative;
+    bool has_error;
     int raw_glucose;
     int raw_temperature;
     int temperature_adjustment;
 };
 
 /**
- * @brief 
+ * @brief a record received from the sensor via BLE containing glucose and temperature data
  * 
  */
 struct ble_record {
@@ -44,11 +44,18 @@ struct ble_record {
      */
     ble_record() = default;
 
-    bool negative;
+    /**
+     * @brief Construct a new ble record object
+     * 
+     * @param record the record to be parsed
+     */
+    ble_record(const std::vector<uint8_t> record);
 
-    std::vector<uint8_t> raw_glucose;
-    std::vector<uint8_t> raw_temperature;
-    std::vector<uint8_t> temperature_adjustment;
+
+    bool negative;
+    int raw_glucose;
+    int raw_temperature;
+    int temperature_adjustment;
 };
 
 } // namespace cgm
