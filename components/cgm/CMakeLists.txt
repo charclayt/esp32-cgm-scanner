@@ -6,10 +6,12 @@ idf_component_register(SRCS
                         "sensor/sensor_state.cpp"
                         "sensor/sensor_types.cpp"
                         "ble.cpp"
+                        "calculations.cpp"
                         "crc.cpp"
                         "decrypt.cpp"
                         "fram.cpp"
                         "nfc.cpp"
                         "record.cpp"
+                        "trend.cpp"
                     INCLUDE_DIRS "."
                     REQUIRES PN5180-Library arduino)
