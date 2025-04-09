@@ -15,11 +15,19 @@ namespace cgm {
 struct FRAM_data {
 
     /**
+     * @brief default constructor for FRAM_data
+     * 
+     */
+    FRAM_data() = default;
+
+    /**
      * @brief Construct a new fram data object
      * 
      * @param fram the FRAM data to be parsed
      */
-    FRAM_data(std::vector<uint8_t>& fram);
+    FRAM_data(const std::vector<uint8_t>& fram);
+
+    int error = false;
 
     // FRAM data components:
     

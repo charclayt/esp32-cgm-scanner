@@ -7,7 +7,12 @@
 
 namespace cgm {
 
-FRAM_data::FRAM_data(std::vector<uint8_t>& fram) {
+FRAM_data::FRAM_data(const std::vector<uint8_t>& fram) {
+    if (fram.size() == 0) {
+        error = true;
+        return;
+    }
+
     /// HEADER ///
     header_crc   = {fram[0], fram[1]};
     sensor_state = fram[4];

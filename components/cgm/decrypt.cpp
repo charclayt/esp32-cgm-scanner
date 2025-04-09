@@ -3,9 +3,14 @@
 #include <decrypt.hpp>
 
 #include <common.hpp>
+#include <crc.hpp>
 
 #include <vector>
 #include <cstdint>
+
+#include <esp_log.h>
+
+#define TAG "CGM_DECRYPT"
 
 namespace cgm {
 
@@ -28,6 +33,23 @@ std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<u
     }
 
     // TODO: check if crc is correct
+    auto crc_header = check_CRC16(std::vector<uint8_t>(result.begin(), result.begin() + 24));
+    ESP_LOGI(TAG, "FRAM header CRC match: %d", crc_header != 0);
+    // logger::log_info("FRAM header CRC match: %d", crc_header != 0);
+
+    auto crc_body = check_CRC16(std::vector<uint8_t>(result.begin() + 24, result.begin() + 24 + 296));
+    ESP_LOGI(TAG, "FRAM body CRC match: %d", crc_body != 0);
+    // logger::log_info("FRAM body CRC match: %d", crc_body != 0);
+
+    auto crc_footer = check_CRC16(std::vector<uint8_t>(result.begin() + 24 + 296, result.begin() + 24 + 296 + 24));
+    ESP_LOGI(TAG, "FRAM footer CRC match: %d", crc_footer != 0);
+    // logger::log_info("FRAM footer CRC match: %d", crc_footer != 0);
+
+    if (crc_header == 0 || crc_body == 0 || crc_footer == 0) {
+        ESP_LOGE(TAG, "FRAM CRC check failed");
+        // logger::log_error("FRAM CRC check failed");
+        return {};
+    }
 
     return result;
 }

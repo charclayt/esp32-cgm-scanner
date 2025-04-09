@@ -18,7 +18,7 @@ static const std::vector<uint16_t> keys = {0xA0C5, 0x6860, 0x0000, 0x14C6};
  * @param uid the sensor's UID
  * @param info the sensor's patch info
  * @param encrypted_data the encrypted FRAM data
- * @return `std::vector<uint8_t>` - the decrypted FRAM data
+ * @return `std::vector<uint8_t>` - the decrypted FRAM data if CRC check passes, otherwise an empty vector
  */
 std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encrypted_data);
 

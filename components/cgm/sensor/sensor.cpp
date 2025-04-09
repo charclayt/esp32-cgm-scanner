@@ -6,8 +6,9 @@
 namespace cgm {
 
 void sensor::set_UID(const uint8_t* uid) {
-    m_uid.reserve(sizeof(uid));
-    m_uid = std::vector<uint8_t>(uid, uid + sizeof(uid));
+    // m_uid.reserve(sizeof(uid));
+    // m_uid = std::vector<uint8_t>(uid, uid + sizeof(uid));
+    this->m_uid.assign(uid, uid + 8); // Ensure proper copying
 }
 
 std::vector<uint8_t> sensor::get_UID() {

@@ -6,34 +6,34 @@
 
 namespace cgm {
 
-sensorRegion get_sensor_region(const std::vector<uint8_t>& patch_info) {
+sensor_region get_sensor_region(const std::vector<uint8_t>& patch_info) {
     switch (patch_info[3]) {
         case 0x00:
-            return sensorRegion::UNKNOWN;
+            return sensor_region::UNKNOWN;
         case 0x01:
-            return sensorRegion::EUROPE;
+            return sensor_region::EUROPE;
         case 0x02:
-            return sensorRegion::USA;
+            return sensor_region::USA;
         case 0x04:
-            return sensorRegion::AUSTRALIA_CANADAIAN;
+            return sensor_region::AUSTRALIA_CANADAIAN;
         case 0x08:
-            return sensorRegion::EASTERN;
+            return sensor_region::EASTERN;
         default:
-            return sensorRegion::UNKNOWN;
+            return sensor_region::UNKNOWN;
     }
 }
 
-std::string to_string(sensorRegion region) {
+std::string to_string(sensor_region region) {
     switch (region) {
-        case sensorRegion::UNKNOWN:
+        case sensor_region::UNKNOWN:
             return "Unknown";
-        case sensorRegion::EUROPE:
+        case sensor_region::EUROPE:
             return "European";
-        case sensorRegion::USA:
+        case sensor_region::USA:
             return "USA";
-        case sensorRegion::AUSTRALIA_CANADAIAN:
+        case sensor_region::AUSTRALIA_CANADAIAN:
             return "Australia/Canada";
-        case sensorRegion::EASTERN:
+        case sensor_region::EASTERN:
             return "Eastern";
         default:
             return "Unknown";

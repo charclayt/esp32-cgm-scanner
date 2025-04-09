@@ -11,10 +11,10 @@ namespace cgm {
 const auto TEXAS_INSTRUMENTS = 0x07;
 
 /**
- * @brief sensorType enum class to define sensor types
+ * @brief sensor_type enum class to define sensor types
  * 
  */
-enum class sensorType {
+enum class sensor_type {
     UNKNOWN,
     LIBRE1,
     LIBRE2EU,
@@ -31,17 +31,17 @@ enum class sensorType {
  * @brief Get the sensor type, based on given patchInfo
  * 
  * @param patch_info the sensors patch info
- * @return `sensorType` - the sensor type
+ * @return `sensor_type` - the sensor type
  */
-sensorType get_sensor_type(const std::vector<uint8_t>& patch_info);
+sensor_type get_sensor_type(const std::vector<uint8_t>& patch_info);
 
 /**
- * @brief convert sensorType to string
+ * @brief convert sensor_type to string
  * 
  * @param type the sensor type to convert
  * @return `std::string` - the string representation of the sensor type 
  */
-std::string to_string(sensorType type);
+std::string to_string(sensor_type type);
 
 } // namespace cgm
 

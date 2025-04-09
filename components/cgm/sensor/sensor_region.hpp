@@ -8,10 +8,10 @@
 namespace cgm {
 
 /**
- * @brief sensorRegion enum class to define sensor regions
+ * @brief sensor_region enum class to define sensor regions
  * 
  */
-enum class sensorRegion {
+enum class sensor_region {
     UNKNOWN,
     EUROPE,
     USA,
@@ -23,17 +23,17 @@ enum class sensorRegion {
  * @brief Get the sensor region object
  * 
  * @param patch_info the sensors patch info
- * @return `sensorRegion` - the sensor region
+ * @return `sensor_region` - the sensor region
  */
-sensorRegion get_sensor_region(const std::vector<uint8_t>& patch_info);
+sensor_region get_sensor_region(const std::vector<uint8_t>& patch_info);
 
 /**
- * @brief convert sensorRegion to string
+ * @brief convert sensor_region to string
  * 
  * @param region the sensor region to convert
  * @return `std::string` - the string representation of the sensor region 
  */
-std::string to_string(sensorRegion region);
+std::string to_string(sensor_region region);
 
 } // namespace cgm
 

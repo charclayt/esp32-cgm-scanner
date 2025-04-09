@@ -6,44 +6,44 @@
 
 namespace cgm {
 
-sensorState get_sensor_state(const std::vector<uint8_t>& fram) {
+sensor_state get_sensor_state(const std::vector<uint8_t>& fram) {
     return get_sensor_state(fram[4]);
 }
 
-sensorState get_sensor_state(const uint8_t& state_byte) {
+sensor_state get_sensor_state(const uint8_t& state_byte) {
     switch (state_byte) {
         case 0x01:
-            return sensorState::NOT_YET_STARTED;
+            return sensor_state::NOT_YET_STARTED;
         case 0x02:
-            return sensorState::INITIALISING;
+            return sensor_state::INITIALISING;
         case 0x03:
-            return sensorState::READY;
+            return sensor_state::READY;
         case 0x04:
-            return sensorState::EXPIRED;
+            return sensor_state::EXPIRED;
         case 0x05:
-            return sensorState::SHUTDOWN;
+            return sensor_state::SHUTDOWN;
         case 0x06:
-            return sensorState::FAILURE;
+            return sensor_state::FAILURE;
         default:
-            return sensorState::UNKNOWN;
+            return sensor_state::UNKNOWN;
     }
 }
 
-std::string to_string(sensorState state) {
+std::string to_string(sensor_state state) {
     switch (state) {
-        case sensorState::UNKNOWN:
+        case sensor_state::UNKNOWN:
             return "Unknown";
-        case sensorState::NOT_YET_STARTED:
+        case sensor_state::NOT_YET_STARTED:
             return "Sensor not yet started";
-        case sensorState::INITIALISING:
+        case sensor_state::INITIALISING:
             return "Sensor initialising";
-        case sensorState::READY:
+        case sensor_state::READY:
             return "Sensor ready";
-        case sensorState::EXPIRED:
+        case sensor_state::EXPIRED:
             return "Sensor expired";
-        case sensorState::SHUTDOWN:
+        case sensor_state::SHUTDOWN:
             return "Sensor shutdown";
-        case sensorState::FAILURE:
+        case sensor_state::FAILURE:
             return "Sensor failure";
         default:
             return "Unknown";

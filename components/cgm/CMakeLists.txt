@@ -12,4 +12,4 @@ idf_component_register(SRCS
                         "nfc.cpp"
                         "record.cpp"
                     INCLUDE_DIRS "."
-                    REQUIRES PN5180-Library)
+                    REQUIRES PN5180-Library arduino)
