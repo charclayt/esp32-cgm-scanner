@@ -17,10 +17,20 @@ static const std::vector<uint16_t> keys = {0xA0C5, 0x6860, 0x0000, 0x14C6};
  * 
  * @param uid the sensor's UID
  * @param info the sensor's patch info
- * @param encryptedData the encrypted FRAM data
+ * @param encrypted_data the encrypted FRAM data
  * @return `std::vector<uint8_t>` - the decrypted FRAM data
  */
-std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encryptedData);
+std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encrypted_data);
+
+
+/**
+ * @brief Decrypts the received BLE data using the sensor's UID
+ * 
+ * @param uid the sensor's UID
+ * @param encrypted_data the encrypted BLE data
+ * @return `std::vector<uint8_t>` - the decrypted BLE data
+ */
+std::vector<uint8_t> decrypt_BLE(std::vector<uint8_t>& uid, const std::vector<uint8_t>& encrypted_data);
 
 /**
  * @brief 
@@ -30,7 +40,7 @@ std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<u
  * @param y 
  * @return std::vector<uint16_t> 
  */
-std::vector<uint16_t> prepareVariables(const std::vector<uint8_t>& uid, uint16_t x, uint16_t y);
+std::vector<uint16_t> prepare_variables(const std::vector<uint8_t>& uid, uint16_t x, uint16_t y);
 
 /**
  * @brief 
@@ -38,7 +48,13 @@ std::vector<uint16_t> prepareVariables(const std::vector<uint8_t>& uid, uint16_t
  * @param input 
  * @return std::vector<uint16_t> 
  */
-std::vector<uint16_t> processCrypto(const std::vector<uint16_t>& input);
+std::vector<uint16_t> process_crypto(const std::vector<uint16_t>& input);
+
+/**
+ * @brief 
+ * 
+ */
+std::vector<uint8_t> useful_function(const std::vector<uint8_t>& uid, uint16_t x, uint16_t y);
 
 } // namespace cgm
 

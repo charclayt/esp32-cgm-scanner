@@ -38,7 +38,8 @@ struct BLE_data {
     // -------------------------
     // | 28-31 | 32-35 | 36-39 |
 
-    std::vector<ble_record> records; // bytes 0-39
+    std::vector<ble_record> trend_records; // bytes 0-27
+    std::vector<ble_record> historic_records; // bytes 28-39
 
     std::vector<uint8_t> age; // byte 40-41
 

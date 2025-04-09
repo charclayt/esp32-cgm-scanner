@@ -10,10 +10,9 @@ namespace cgm {
  * @brief check the CRC16 of the given data
  * 
  * @param data the data to calculate the CRC16 for
- * @param type (0 | 1 | 2) for FRAM (header | body | footer) respectively
  * @return `bool` - whether the calculated CRC16 matches the given CRC16
  */
-bool check_CRC16(const std::vector<uint8_t>& data, uint8_t type);
+bool check_CRC16(const std::vector<uint8_t>& data);
 
 /**
  * @brief 

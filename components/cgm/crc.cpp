@@ -5,27 +5,17 @@
 
 namespace cgm {
 
-bool check_CRC16(const std::vector<uint8_t>& data, uint8_t type) {
-    auto num_bytes_to_read = 0;
-
-    if (type == 0) { // header
-        num_bytes_to_read = 24;
-    } else if (type == 1) { // body
-        num_bytes_to_read = 296;
-    } else if (type == 2) { // footer
-        num_bytes_to_read = 24;
-    }
-
+bool check_CRC16(const std::vector<uint8_t>& data) {
     // convert and store the first two bytes of the data (crc16) as a uint16_t
-    uint16_t crc_truth = data.at(0) | (data.at(1) << 8);
+    uint16_t crc_truth = data[0] | (data[1] << 8);
 
     // compute the CRC16 of the data ...
 
     uint16_t crc = 0xFFFF;
 
     // Calculate CRC for each byte in the data (except the first two bytes, which is the CRC16)
-    for (auto i = 2; i < num_bytes_to_read; ++i) {
-        crc = (uint16_t)((crc >> 8) ^ CRC16_table[(crc ^ data.at(i)) & 0xFF]);
+    for (auto i = 2; i < data.size(); i++) {
+        crc = (uint16_t)((crc >> 8) ^ CRC16_table[(crc ^ data[i]) & 0xFF]);
     }
 
     // CGM uses a reversed CRC16

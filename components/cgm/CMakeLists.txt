@@ -5,6 +5,7 @@ idf_component_register(SRCS
                         "sensor/sensor_serial.cpp"
                         "sensor/sensor_state.cpp"
                         "sensor/sensor_types.cpp"
+                        "ble.cpp"
                         "crc.cpp"
                         "decrypt.cpp"
                         "fram.cpp"

@@ -46,7 +46,7 @@ void readHeader(PN5180ISO15693& nfc, std::vector<uint8_t>& uid, const uint8_t bl
 
     // Check if the buffer is full (three blocks * block_size)
     if (buffer.size() == (block_size * num_blocks)) {
-        if (check_CRC16(buffer, (uint8_t) 0)) {
+        if (check_CRC16(buffer)) {
             Serial.println("CRC16 check for header successful");
         } else {
             Serial.println("CRC16 check for header failed");

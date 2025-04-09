@@ -1,32 +1,73 @@
+// TODO: references
+
 #include <decrypt.hpp>
+
+#include <common.hpp>
 
 #include <vector>
 #include <cstdint>
 
 namespace cgm {
 
-std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encryptedData) {
+std::vector<uint8_t> decrypt_FRAM(std::vector<uint8_t>& uid, const std::vector<uint8_t>& info, const std::vector<uint8_t>& encrypted_data) {
     std::vector<uint8_t> result;
-    result.reserve((sizeof(uint8_t) * 8) * 43);
+    result.reserve((sizeof(uint8_t) * 8) * FRAM_SIZE_BLOCKS);
 
     for (auto i = 0; i < 43; ++i) {
-        auto input = prepareVariables(uid, static_cast<uint16_t>(i), static_cast<uint16_t>(((info[5] << 8) | info[4]) ^ 0x44));
-        auto blockKey = processCrypto(input);
+        auto input = prepare_variables(uid, static_cast<uint16_t>(i), static_cast<uint16_t>(((info[5] << 8) | info[4]) ^ 0x44));
+        auto block_key = process_crypto(input);
 
-        result.push_back(encryptedData[i * 8 + 0] ^ static_cast<uint8_t>(blockKey[0] & 0xFF));
-        result.push_back(encryptedData[i * 8 + 1] ^ static_cast<uint8_t>((blockKey[0] >> 8) & 0xFF));
-        result.push_back(encryptedData[i * 8 + 2] ^ static_cast<uint8_t>(blockKey[1] & 0xFF));
-        result.push_back(encryptedData[i * 8 + 3] ^ static_cast<uint8_t>((blockKey[1] >> 8) & 0xFF));
-        result.push_back(encryptedData[i * 8 + 4] ^ static_cast<uint8_t>(blockKey[2] & 0xFF));
-        result.push_back(encryptedData[i * 8 + 5] ^ static_cast<uint8_t>((blockKey[2] >> 8) & 0xFF));
-        result.push_back(encryptedData[i * 8 + 6] ^ static_cast<uint8_t>(blockKey[3] & 0xFF));
-        result.push_back(encryptedData[i * 8 + 7] ^ static_cast<uint8_t>((blockKey[3] >> 8) & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 0] ^ static_cast<uint8_t>(block_key[0] & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 1] ^ static_cast<uint8_t>((block_key[0] >> 8) & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 2] ^ static_cast<uint8_t>(block_key[1] & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 3] ^ static_cast<uint8_t>((block_key[1] >> 8) & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 4] ^ static_cast<uint8_t>(block_key[2] & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 5] ^ static_cast<uint8_t>((block_key[2] >> 8) & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 6] ^ static_cast<uint8_t>(block_key[3] & 0xFF));
+        result.push_back(encrypted_data[i * 8 + 7] ^ static_cast<uint8_t>((block_key[3] >> 8) & 0xFF));
     }
+
+    // TODO: check if crc is correct
 
     return result;
 }
 
-std::vector<uint16_t> prepareVariables(const std::vector<uint8_t>& uid, uint16_t x, uint16_t y) {
+std::vector<uint8_t> decrypt_BLE(std::vector<uint8_t>& uid, const std::vector<uint8_t>& encrypted_data) {
+    auto d = useful_function(uid, 0x1b, 0x1b6a);
+
+    uint16_t one = static_cast<uint16_t>(d[1]) << 8 | d[0];
+    uint16_t two = static_cast<uint16_t>(d[3]) << 8 | d[2];
+
+    uint16_t x = (one ^ two) | 0x63;
+    uint16_t y = static_cast<uint16_t>(encrypted_data[0]) << 8 | encrypted_data[1];
+
+    std::vector<uint8_t> key;
+    auto initial_key = process_crypto(prepare_variables(uid, x, y));
+
+    for (auto i = 0; i < 8; i++) {
+        key.push_back(static_cast<uint8_t>(initial_key[0]));
+        key.push_back(static_cast<uint8_t>(initial_key[0]) >> 8);
+        key.push_back(static_cast<uint8_t>(initial_key[1]));
+        key.push_back(static_cast<uint8_t>(initial_key[1]) >> 8);
+        key.push_back(static_cast<uint8_t>(initial_key[2]));
+        key.push_back(static_cast<uint8_t>(initial_key[2]) >> 8);
+        key.push_back(static_cast<uint8_t>(initial_key[3]));
+        key.push_back(static_cast<uint8_t>(initial_key[3]) >> 8);
+        initial_key = process_crypto(initial_key);
+    }
+
+    // TODO: check where crc is in BLE (start OR end 2 bytes)
+    std::vector<uint8_t> result(encrypted_data.begin(), encrypted_data.end());
+    for (auto i = 0; i < result.size(); i++) {
+        result[i] ^= key[i];
+    }
+
+    // TODO: check if crc is correct
+
+    return result;
+}
+
+std::vector<uint16_t> prepare_variables(const std::vector<uint8_t>& uid, uint16_t x, uint16_t y) {
     uint16_t s1 = static_cast<uint16_t>(static_cast<uint32_t>((uid[5] << 8) | uid[4]) + static_cast<uint32_t>(x) + static_cast<uint32_t>(y));
     uint16_t s2 = static_cast<uint16_t>(static_cast<uint32_t>((uid[3] << 8) | uid[2]) + static_cast<uint32_t>(keys[2]));
     uint16_t s3 = static_cast<uint16_t>(static_cast<uint32_t>((uid[1] << 8) | uid[0]) + static_cast<uint32_t>(x) * 2);
@@ -35,7 +76,7 @@ std::vector<uint16_t> prepareVariables(const std::vector<uint8_t>& uid, uint16_t
     return {s1, s2, s3, s4};
 }
 
-std::vector<uint16_t> processCrypto(const std::vector<uint16_t>& input) {
+std::vector<uint16_t> process_crypto(const std::vector<uint16_t>& input) {
     auto op = [](uint16_t value) -> uint16_t {
         uint16_t res = value >> 2; // result does not include these last 2 bits
 
@@ -65,6 +106,20 @@ std::vector<uint16_t> processCrypto(const std::vector<uint16_t>& input) {
     uint16_t f4 = r3 ^ r7;
 
     return {f4, f3, f2, f1};
+}
+
+std::vector<uint8_t> useful_function(const std::vector<uint8_t>& uid, uint16_t x, uint16_t y) {
+    auto block_key = process_crypto(prepare_variables(uid, x, y));
+    auto low = block_key[0];
+    auto high = block_key[1];
+
+    uint8_t r1 = low ^ 0x4163;
+    uint8_t r2 = high ^ 0x4344;
+
+    uint8_t f1 = r1 >> 8;
+    uint8_t f2 = r2 >> 8;
+
+    return {r1, f1, r2, f2};
 }
 
 } // namespace cgm
