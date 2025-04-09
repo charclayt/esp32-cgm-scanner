@@ -2,6 +2,9 @@
 #include <sdkconfig.h>
 #include <esp_log.h>
 
+#include <common_main.hpp>
+#include <display.hpp>
+
 // PN5180 includes (NFC reader)
 #include "PN5180.h"
 #include "PN5180ISO15693.h"
@@ -16,15 +19,17 @@
 // #include "NimBLEDevice.h"
 
 // CGM includes
+#include "calculations.hpp"
+#include "crc.hpp"
 #include "decrypt.hpp"
+#include "fram.hpp"
+#include "nfc.hpp"
 #include "sensor/sensor_types.hpp"
 #include "sensor/sensor_region.hpp"
 #include "sensor/sensor_state.hpp"
 #include "sensor/sensor_serial.hpp"
-#include "nfc.hpp"
 #include "sensor/sensor.hpp"
-#include "crc.hpp"
-#include "fram.hpp"
+#include "trend.hpp"
 
 #include <esp_task_wdt.h>
 
@@ -38,26 +43,6 @@
 
 #define WDT_TIMEOUT 60 //5 seconds WDT
 #define TAG "CGM_SCANNER"
-// const char* TAG = "CGM_SCANNER";
-// logger::set_tag("CGM_SCANNER");
-
-// ESP-32 <-> PN5180 pinout mapping
-#define PN5180_NSS  12  // GPIO12
-#define PN5180_BUSY 13  // GPIO13
-#define PN5180_RST  14  // GPIO14
-
-// ESP-32 <-> SSD1306 pinout mapping
-#define OLED_MOSI 5
-#define OLED_CLK  4
-#define OLED_DC   1
-#define OLED_CS   2
-#define OLED_RESET 3
-
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
-// const int relayPin = 25;  // GPIO25
-// int relayState = LOW;   // relayState used to set the relayPin
 
 // Global NFC 
 PN5180ISO15693 nfc(PN5180_NSS, PN5180_BUSY, PN5180_RST);
@@ -76,28 +61,6 @@ bool device_found = false;
 SPIClass vspi(2);
 
 std::string targetSensorName = ""; // TODO: this should be sensor serial number
-
-const uint8_t arrow_down_diagonal[] = {0x08, 0x1c, 0x2a, 0x49, 0x08, 0x08, 0x08, 0x08};
-
-void drawGlucoseDisplay(double glucose) {
-  display.clearDisplay();
-  display.cp437(true);
-
-  // Format glucose text
-  char buffer[16];
-  snprintf(buffer, sizeof(buffer), "%.1f", glucose);
-
-  // Set glucose value on the left side
-  display.setTextSize(3);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor((SCREEN_WIDTH * 0.1), (SCREEN_HEIGHT / 2) - 9); // vertically centered
-  display.println(buffer);
-
-  // Set arrow icon on the right side
-  display.drawBitmap((SCREEN_WIDTH * 0.75), (SCREEN_HEIGHT / 2), arrow_down_diagonal, 8, 8, SSD1306_WHITE);
-
-  display.display();
-}
 
 // TODO: move / fix
 // class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
@@ -139,8 +102,8 @@ extern "C" void app_main() {
         .trigger_panic = true
     };
 
-    esp_task_wdt_init(&wdtConfig); //enable panic so ESP32 restarts
-    esp_task_wdt_add(NULL); //add current thread to WDT watch
+    esp_task_wdt_init(&wdtConfig); // enable panic so ESP32 restarts
+    esp_task_wdt_add(NULL); // add current thread to WDT watch
 
     // initialise NFC reader
     nfc.begin();
@@ -167,7 +130,7 @@ extern "C" void app_main() {
     display.clearDisplay();
 
     ///// TODO: default display - if sensor stored, display that -> else "no sensor found" /////
-    drawGlucoseDisplay(5.8);
+    draw_default_display(display);
     /////
 
     cgm::sensor sensor;
@@ -207,13 +170,14 @@ while (true) {
         auto ret = nfc.getPatchInfo(buffer);
         ESP_LOGD(TAG, "getPatchInfo ret: %d", ret);
         // TODO: fix getPatchInfo, remove hardcoded values
-        std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-        // std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X16, 0X0A};
+        // std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
+        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X55, 0X0E};
         sensor.m_patch_info.assign(patch_info.begin(), patch_info.end());
 
         /// Check sensor is Libre 2 EU (currently only sensor tested) ///
         if (cgm::get_sensor_type(sensor.m_patch_info) != cgm::sensor_type::LIBRE2EU) {
             ESP_LOGE(TAG, "Sensor is not Libre 2 EU");
+            display_error(display, "Incompatible sensor");
             continue;
         }
 
@@ -226,7 +190,7 @@ while (true) {
         sensor.m_fram_data = cgm::FRAM_data(cgm::decrypt_FRAM(sensor.m_uid, sensor.m_patch_info, FRAM_vector));
         if (sensor.m_fram_data.error) {
             ESP_LOGE(TAG, "Error decrypting FRAM, returning to main loop");
-            // TODO: display error on screen?
+            display_error(display, "Error decrypting FRAM");
             continue;
         }
 
@@ -251,11 +215,22 @@ while (true) {
             sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1].raw_temperature,
             sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1].temperature_adjustment);
 
+
+
+        /// Display current NFC values on screen ///
+        auto trend = cgm::calculate_glucose_roc(sensor.m_fram_data.trend_records);
+
+        auto current_glucose = cgm::calculate_glucose_mmol(sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1]);
+
+        draw_glucose_display(display, current_glucose, trend);
+
+
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
         } else { // If a card is not detected
 
             if (rc == ISO15693_EC_OK) { // If UID present, but not TI
                 ESP_LOGI(TAG, "Card detected is not Texas Instruments");
+                display_error(display, "Not TI sensor");
                 vTaskDelay(900 / portTICK_PERIOD_MS);
             } else {
                 // The most significant (last) byte of a valid UID should always be 0xE0. e.g. E007C4A509C247A8                    
