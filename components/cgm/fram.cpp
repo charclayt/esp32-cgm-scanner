@@ -24,6 +24,7 @@ FRAM_data::FRAM_data(const std::vector<uint8_t>& fram) {
 
     trend_records.reserve(sizeof(fram_record) * 16); // 16 trend records (6 bytes each) for the last 16 minutes
     trend_records.push_back(fram_record({fram[28], fram[29], fram[30], fram[31], fram[32], fram[33]}));
+    // trend_records.push_back(fram_record({0x38, 0x60, 0x00, 0x3C, 0xB9, 0x00})); // test data: raw_glucose = 1564, has_error = false, raw_temp = 7484, temp_adjustment = 8, negative = false
     trend_records.push_back(fram_record({fram[34], fram[35], fram[36], fram[37], fram[38], fram[39]}));
     trend_records.push_back(fram_record({fram[40], fram[41], fram[42], fram[43], fram[44], fram[45]}));
     trend_records.push_back(fram_record({fram[46], fram[47], fram[48], fram[49], fram[50], fram[51]}));

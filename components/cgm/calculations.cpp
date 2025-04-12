@@ -11,6 +11,7 @@
 namespace cgm {
 
 double calculate_glucose_mmol(fram_record& record) {
+    // auto glcuose_mgdl = (0.113 * record.raw_glucose) - 21.1;
     double glucose_mmol = record.raw_glucose / 18; // Convert to mmol/L
 
     // TODO: apply calibration if needed (temperature adjustment, etc)
@@ -24,9 +25,6 @@ glucose_trend calculate_glucose_roc(std::vector<fram_record> glucose_vector) {
     }
 
     ESP_LOGD(TAG, "glucose_vector size: %d", glucose_vector.size());
-
-    // reverse the vector to get oldest to newest values
-    std::reverse(glucose_vector.begin(), glucose_vector.end());
 
     // TODO: maybe perform calibration on glucose_vector first
 
@@ -63,6 +61,29 @@ glucose_trend calculate_glucose_roc(std::vector<fram_record> glucose_vector) {
     } else {
         return glucose_trend::STEADY;
     }
+}
+
+std::vector<fram_record> calculate_contiguous_records(std::vector<fram_record>& records, int start_index, bool remove_errors) {
+    std::vector<fram_record> contiguous_records;
+    contiguous_records.reserve(records.size()); // Reserve space for all records
+
+    // Start from the current trend index and go backwards
+    for (int i = start_index; i >= 0; --i) {
+        if (remove_errors && records[i].has_error) {
+            continue; // Skip error records
+        }
+        contiguous_records.push_back(records[i]);
+    }
+
+    // Now go backwards from the end of the vector to the start index
+    for (int i = records.size() - 1; i > start_index; --i) {
+        if (remove_errors && records[i].has_error) {
+            continue; // Skip error records
+        }
+        contiguous_records.push_back(records[i]);
+    }
+
+    return contiguous_records;
 }
 
 } // namespace cgm

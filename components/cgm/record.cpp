@@ -42,6 +42,7 @@ fram_record::fram_record(const std::vector<uint8_t> record) {
     // Check if FRAM record is valid (6 bytes)
     if (record.size() != FRAM_RECORD_SIZE_BYTES) {
         has_error = true;
+        negative = (temperature_adjustment = (raw_temperature = (raw_glucose = 0)));
         return;
     }
 
@@ -95,6 +96,7 @@ ble_record::ble_record(const std::vector<uint8_t> record) {
     // check if BLE record is valid (4 bytes)
     if (record.size() != BLE_RECORD_SIZE_BYTES) {
         // TODO: error message / logging
+        negative = (temperature_adjustment = (raw_temperature = (raw_glucose = 0)));
         return;
     }
 
