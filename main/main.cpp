@@ -3,7 +3,7 @@
 #include <esp_log.h>
 
 #include <common_main.hpp>
-#include <display.hpp>
+#include <display_utils.hpp>
 
 // PN5180 includes (NFC reader)
 #include "PN5180.h"
@@ -20,6 +20,7 @@
 
 // CGM includes
 #include "calculations.hpp"
+#include "common.hpp"
 #include "crc.hpp"
 #include "decrypt.hpp"
 #include "fram.hpp"
@@ -93,7 +94,7 @@ std::string targetSensorName = ""; // TODO: this should be sensor serial number
 extern "C" void app_main() {
     vspi.begin(OLED_CLK, OLED_DC, OLED_MOSI, OLED_CS);
 
-    esp_log_level_set(TAG, ESP_LOG_INFO);
+    esp_log_level_set("*", ESP_LOG_DEBUG);
     ESP_LOGI(TAG, "UploadedL %s %s", __DATE__, __TIME__);
 
     esp_task_wdt_config_t wdtConfig = {
@@ -171,7 +172,7 @@ while (true) {
         ESP_LOGD(TAG, "getPatchInfo ret: %d", ret);
         // TODO: fix getPatchInfo, remove hardcoded values
         // std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X55, 0X0E};
+        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X31, 0X1F};
         sensor.m_patch_info.assign(patch_info.begin(), patch_info.end());
 
         /// Check sensor is Libre 2 EU (currently only sensor tested) ///
@@ -208,22 +209,54 @@ while (true) {
         ESP_LOGI(TAG, "Historic pointer: %d", sensor.m_fram_data.historic_index);
 
         ESP_LOGI(TAG, "Current trend record %d", sensor.m_fram_data.trend_index);
-        ESP_LOGI(TAG, "Error: %d Negative %d Raw glucose: %d Raw temperature: %d Temperature adjustment: %d",
-            sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1].has_error,
-            sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1].negative,
-            sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1].raw_glucose,
-            sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1].raw_temperature,
-            sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1].temperature_adjustment);
 
+        // DEBUG - log all FRAM trend records
+        for (int i = 0; i < sensor.m_fram_data.trend_records.size(); i++) {
+            const auto& record = sensor.m_fram_data.trend_records[i];
+            ESP_LOGD(TAG, "FRAM TREND RECORD %d - Error: %d Negative %d Raw glucose: %d Raw temperature: %d Temperature adjustment: %d",
+                i + 1,
+                record.has_error,
+                record.negative,
+                record.raw_glucose,
+                record.raw_temperature,
+                record.temperature_adjustment);
+        }
 
+        /// Get most recent trend record without error and time it was taken ///
+        // TODO: modify this once fram trends are restructured in order of time
+        auto latest_record_no_error = sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1];
+        auto time_since_reading = 0;
+        if (latest_record_no_error.has_error) {
+            ESP_LOGI(TAG, "Most recent trend record has error, getting closest valid record");
+            auto found_valid_record = false;
+            // auto contiguous_records = cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true);
+            for (int i = sensor.m_fram_data.trend_index - 2; i != sensor.m_fram_data.trend_index - 1; i--) {
+                time_since_reading += 1; // add 1 minute for each record
+                if (!sensor.m_fram_data.trend_records[i].has_error) {
+                    latest_record_no_error = sensor.m_fram_data.trend_records[i];
+                    found_valid_record = true;
+                    ESP_LOGI(TAG, "Found valid record %d, which is %d minutes ago", i + 1, time_since_reading);
+                    break;
+                }
+                // Loop back around to the end of fram_data.trend_records, and continue until fram_data.trend_index - 1
+                if (i == 0) {
+                    i = cgm::NUM_FRAM_TREND_RECORDS;
+                }
+            }
+            if (!found_valid_record) {
+                ESP_LOGE(TAG, "No valid record found");
+                // TODO: display ERR on CGM screen
+                display_error(display, "No valid record found");
+                continue;
+            }
+        }
 
         /// Display current NFC values on screen ///
-        auto trend = cgm::calculate_glucose_roc(sensor.m_fram_data.trend_records);
+        auto trend = cgm::calculate_glucose_roc(cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true));
 
-        auto current_glucose = cgm::calculate_glucose_mmol(sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1]);
+        auto current_glucose = cgm::calculate_glucose_mmol(latest_record_no_error);
 
-        draw_glucose_display(display, current_glucose, trend);
-
+        draw_glucose_display(display, current_glucose, time_since_reading, trend);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
         } else { // If a card is not detected

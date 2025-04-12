@@ -1,4 +1,4 @@
-#include <display.hpp>
+#include <display_utils.hpp>
 
 #include <common_main.hpp>
 #include <trend.hpp>
@@ -57,6 +57,7 @@ void draw_default_display(Adafruit_SSD1306& display) {
     uint16_t w, h;
 
     display.clearDisplay();
+    display.cp437(true);
     display.setTextColor(SSD1306_WHITE);
 
     display.setTextSize(1);
@@ -74,19 +75,28 @@ void draw_default_display(Adafruit_SSD1306& display) {
     display.display();
 }
 
-void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, cgm::glucose_trend trend) {
+void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int time_since_reading, cgm::glucose_trend trend) {
+    int16_t x1, y1;
+    uint16_t w, h;
+
     display.clearDisplay();
     display.cp437(true);
-
-    // Format glucose text
-    char glucose_buffer[16];
-    snprintf(glucose_buffer, sizeof(glucose_buffer), "%.1f", glucose_level);
 
     // Set glucose value on the left side
     display.setTextSize(3);
     display.setTextColor(SSD1306_WHITE);
-    display.setCursor((SCREEN_WIDTH * 0.15), (SCREEN_HEIGHT / 2) - 9); // vertically centered
-    display.println(glucose_buffer);
+    auto glucose_str = std::format("{:.1f}", glucose_level).c_str();
+    display.getTextBounds(glucose_str, 0, 0, &x1, &y1, &w, &h);
+    display.setCursor((SCREEN_WIDTH * 0.15), (SCREEN_HEIGHT - h) / 2); // vertically centered
+    display.println(glucose_str);
+
+    // Display time since last accurate reading (no errors)
+    if (time_since_reading != 0) {
+        display.setTextSize(1);
+        display.setTextColor(SSD1306_WHITE);
+        display.setCursor((SCREEN_WIDTH * 0.15), (SCREEN_HEIGHT * 0.75));
+        display.println(std::format("{} min ago", time_since_reading).c_str());
+    }
 
     // Draw seperation line
     display.drawLine(SCREEN_WIDTH * 0.85, SCREEN_HEIGHT, SCREEN_WIDTH * 0.85, 0, SSD1306_WHITE);
@@ -113,7 +123,7 @@ void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, cgm::
             break;
     }
 
-    // Display predicted glucose level (15 minutes) in bottom-right corner
+    // TODO: Display predicted glucose level (15 minutes) in bottom-right corner
 
 
     display.display();
@@ -124,22 +134,20 @@ void display_error(Adafruit_SSD1306& display, std::optional<std::string> error_m
     uint16_t w, h;
     
     display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
     display.cp437(true);
-
+    display.setTextColor(SSD1306_WHITE);
     display.setTextSize(1);
+
     std::string error = std::format("{} Error! {}", static_cast<char>(0x11), static_cast<char>(0x10));
     display.getTextBounds(error.c_str(), 0, 0, &x1, &y1, &w, &h);
     display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT * 0.1));
     display.println(error.c_str());
 
     if (error_message.has_value()) {
-        display.setTextSize(1);
         display.getTextBounds(error_message.value().c_str(), 0, 0, &x1, &y1, &w, &h);
         display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT * 0.5));
         display.println(error_message.value().c_str());
     } else {
-        display.setTextSize(1);
         display.getTextBounds("No error message", 0, 0, &x1, &y1, &w, &h);
         display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT * 0.5));
         display.println("No error message");
@@ -152,9 +160,26 @@ void display_error(Adafruit_SSD1306& display, std::optional<std::string> error_m
 
     display.display();
 
+    // countdown timer to allow user to read error before redirecting
+    auto seconds_delay = 3;
+    for (auto i = 0; i < seconds_delay; i++) {
+        auto text = std::format("({})", seconds_delay - i).c_str();
+
+        display.setTextColor(SSD1306_WHITE);
+        display.setCursor(0, 0);
+        display.print(text);
+        display.display();
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
+
+        // clear the text, so the numbers don't overlap
+        display.setTextColor(SSD1306_BLACK);
+        display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+        display.fillRect(0, 0, w, h, SSD1306_BLACK);
+    }
+
     // delay to allow user to read error, then reset to default display
-    vTaskDelay(3000 / portTICK_PERIOD_MS); // Wait for 3 seconds
     draw_default_display(display);
     // TODO: redirect to sensor display screen if sensor is present (or when BLE implemented...)
-    // TODO: sometimes triggers twd... (maybe reset WDT here?)
+    // TODO: sometimes triggers wdt... (maybe reset WDT here?)
 }
