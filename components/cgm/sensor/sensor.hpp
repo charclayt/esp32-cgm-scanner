@@ -2,6 +2,7 @@
 #define __CGM_SENSOR_HPP__
 
 #include <fram.hpp>
+#include <ble.hpp>
 #include <sensor/sensor_family.hpp>
 #include <sensor/sensor_region.hpp>
 #include <sensor/sensor_serial.hpp>
@@ -72,6 +73,7 @@ public:
     sensor_type m_type;
 
     FRAM_data m_fram_data;
+    BLE_data m_ble_data;
 };
 
 } // namespace cgm

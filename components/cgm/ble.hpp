@@ -15,6 +15,12 @@ namespace cgm {
 struct BLE_data {
 
     /**
+     * @brief Default constructor for BLE_data
+     * 
+     */
+    BLE_data() = default;
+
+    /**
      * @brief Construct a new ble data object
      * 
      * @param ble the BLE data to be parsed

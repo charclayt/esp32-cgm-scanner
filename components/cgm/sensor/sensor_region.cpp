@@ -7,7 +7,15 @@
 namespace cgm {
 
 sensor_region get_sensor_region(const std::vector<uint8_t>& patch_info) {
-    switch (patch_info[3]) {
+    if (patch_info.size() < 4) {
+        return sensor_region::UNKNOWN;
+    }
+
+    return get_sensor_region(patch_info[3]);
+}
+
+sensor_region get_sensor_region(const uint8_t& region_byte) {
+    switch (region_byte) {
         case 0x00:
             return sensor_region::UNKNOWN;
         case 0x01:

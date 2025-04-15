@@ -46,7 +46,7 @@
 #define TAG "CGM_SCANNER"
 
 // Global NFC 
-PN5180ISO15693 nfc(PN5180_NSS, PN5180_BUSY, PN5180_RST);
+cgm::CGM_NFC nfc(PN5180_NSS, PN5180_BUSY, PN5180_RST);
 
 // Global display
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI,
@@ -186,7 +186,7 @@ while (true) {
         std::vector<uint8_t> FRAM_vector;
         FRAM_vector.reserve(43 * blockSize);
 
-        cgm::read_FRAM(nfc, sensor.m_uid, blockSize, FRAM_vector);
+        nfc.read_FRAM(sensor.m_uid, blockSize, FRAM_vector);
 
         sensor.m_fram_data = cgm::FRAM_data(cgm::decrypt_FRAM(sensor.m_uid, sensor.m_patch_info, FRAM_vector));
         if (sensor.m_fram_data.error) {

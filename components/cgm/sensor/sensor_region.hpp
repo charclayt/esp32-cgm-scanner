@@ -28,6 +28,14 @@ enum class sensor_region {
 sensor_region get_sensor_region(const std::vector<uint8_t>& patch_info);
 
 /**
+ * @brief Get the sensor region object
+ * 
+ * @param region_byte the sensor region byte from sensor patch_info[3]
+ * @return `sensor_region` - the sensor region
+ */
+sensor_region get_sensor_region(const uint8_t& region_byte);
+
+/**
  * @brief convert sensor_region to string
  * 
  * @param region the sensor region to convert

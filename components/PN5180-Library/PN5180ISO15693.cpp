@@ -378,10 +378,6 @@ ISO15693ErrorCode PN5180ISO15693::getSystemInfo(uint8_t *uid, uint8_t *blockSize
 
 ISO15693ErrorCode PN5180ISO15693::getSensorInfo(uint8_t* uid, uint8_t* buffer) {
   uint8_t sensorInfo[] = { 0x02, 0xa1, 0x07 };
-  // uint8_t sensorInfo[] = { 0x02, 0xa1, 0x07, 1, 2, 3, 4, 5, 6, 7, 8 };
-  // for (int i=0; i<8; i++) {
-  //   sensorInfo[3+i] = uid[i];
-  // }
 
   uint8_t* resultPtr;
   ISO15693ErrorCode rc = issueISO15693Command(sensorInfo, sizeof(sensorInfo), &resultPtr);

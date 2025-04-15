@@ -13,7 +13,7 @@ namespace cgm {
 struct fram_record {
 
     /**
-     * @brief default constructor for fram record
+     * @brief Default constructor for fram record
      * 
      */
     fram_record() = default;
@@ -39,7 +39,7 @@ struct fram_record {
  */
 struct ble_record {
     /**
-     * @brief Construct a new ble record object
+     * @brief Default constructor for ble record
      * 
      */
     ble_record() = default;
