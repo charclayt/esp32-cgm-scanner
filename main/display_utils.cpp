@@ -1,6 +1,9 @@
 #include <display_utils.hpp>
 
 #include <common_main.hpp>
+
+#include <calculations.hpp>
+#include <fram.hpp>
 #include <trend.hpp>
 
 #include <Adafruit_GFX.h>
@@ -8,6 +11,8 @@
 
 #include <stdint.h>
 #include <format>
+
+#define TAG "CGM_DISPLAY"
 
 const uint8_t PROGMEM arrow_up[] = {0x08, 0x1c, 0x2a, 0x49, 0x08, 0x08, 0x08, 0x08};
 const uint8_t PROGMEM arrow_up_diagonal[] = {0x0f, 0x03, 0x05, 0x09, 0x10, 0x20, 0x40, 0x80};
@@ -124,6 +129,121 @@ void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int t
     }
 
     // TODO: Display predicted glucose level (15 minutes) in bottom-right corner
+
+
+    display.display();
+}
+
+void draw_historic_display(Adafruit_SSD1306& display, double& current_glucose, std::vector<cgm::fram_record>& historic_records) {
+    display.clearDisplay();
+    display.cp437(true);
+
+    // If there are no historic records, display an error message
+    if (historic_records.empty()) {
+        display_error(display, "No historic records");
+    }
+
+    // Reverse historic_records to display the most recent record on the right
+    std::reverse(historic_records.begin(), historic_records.end());
+
+    // Display historic glucose values in debug mode
+    for (auto& record : historic_records) {
+        double glucose = cgm::calculate_glucose_mmol(record);
+        ESP_LOGD(TAG, "Historic glucose: %f", glucose);
+    }
+
+    // Define allowed glucose range for display
+    const double min_allowed_glucose = 0.0; // TODO: remove magic numbers
+    const double max_allowed_glucose = 21.0;
+
+    // Calculate the maximum and minimum glucose values in the historic records
+    double max_glucose = current_glucose;
+    double min_glucose = current_glucose;
+    for (auto& record : historic_records) {
+        auto glucose = cgm::calculate_glucose_mmol(record);
+        min_glucose = std::min(min_glucose, glucose);
+        max_glucose = std::max(max_glucose, glucose);
+    }
+
+    // Clamp the min and max glucose values to the allowed range
+    min_glucose = std::max(min_glucose, min_allowed_glucose);
+    max_glucose = std::min(max_glucose, max_allowed_glucose);
+
+    // Ensure there's a minimum range to avoid a flat graph
+    if (max_glucose - min_glucose < 1.0) {
+        max_glucose = min_glucose + 1.0;
+    }
+
+    // Calculate the graph dimensions
+    const int graph_width = display.width() - 40;
+    const int graph_height = display.height() - 12;
+    const int graph_x = 10;
+    const int graph_y = 5;
+
+    // Draw the graph axes
+    display.drawLine(graph_x, graph_y + graph_height, graph_x, graph_y, WHITE);
+    display.drawLine(graph_x, graph_y + graph_height, graph_x + graph_width, graph_y + graph_height, WHITE);
+
+    // Plot the glucose values as a line graph
+    const int num_records = historic_records.size();
+    const double x_scale = static_cast<double>(graph_width) / (num_records - 1);
+    const double y_scale = static_cast<double>(graph_height) / (max_glucose - min_glucose);
+    for (int i = 0; i < num_records - 1; i++) {
+        // // Skip this segment if the current or next record has an error
+        // if (historic_records[i].has_error || historic_records[i + 1].has_error) {
+        //     continue;
+        // }
+
+        int x1 = graph_x + static_cast<int>(i * x_scale);
+        int y1 = graph_y + graph_height - static_cast<int>((cgm::calculate_glucose_mmol(historic_records[i]) - min_glucose) * y_scale);
+        int x2 = graph_x + static_cast<int>((i + 1) * x_scale);
+        int y2 = graph_y + graph_height - static_cast<int>((cgm::calculate_glucose_mmol(historic_records[i + 1]) - min_glucose) * y_scale);
+
+        // Ensure y1 and y2 are within the graph's bounds
+        y1 = std::max(graph_y, std::min(graph_y + graph_height, y1));
+        y2 = std::max(graph_y, std::min(graph_y + graph_height, y2));
+
+        display.drawLine(x1, y1, x2, y2, WHITE);
+    }
+
+    // Plot the current glucose value
+    int x_current = graph_x + graph_width; // Plot it at the far right of the graph
+    int y_current = graph_y + graph_height - static_cast<int>((current_glucose - min_glucose) * y_scale);
+
+    // Get the coordinates of the last point in historic_records
+    int x_last = graph_x + static_cast<int>((num_records - 1) * x_scale);
+    int y_last = graph_y + graph_height - static_cast<int>((cgm::calculate_glucose_mmol(historic_records[num_records - 1]) - min_glucose) * y_scale);
+
+    // Ensure y_last is within the graph's bounds
+    y_last = std::max(graph_y, std::min(graph_y + graph_height, y_last));
+
+    // Draw a line from the last historic record to the current glucose value
+    display.drawLine(x_last, y_last, x_current, y_current, WHITE);
+
+    display.drawCircle(x_current, y_current, 2, WHITE);
+
+
+    // Define high and low glucose thresholds
+    const float high_glucose_threshold = 10.0; // Example: 10.0 mmol/L
+    const float low_glucose_threshold = 4.0;  // Example: 4.0 mmol/L
+
+    // Calculate y positions for the thresholds
+    int y_high = graph_y + graph_height - static_cast<int>((high_glucose_threshold - min_glucose) * y_scale);
+    int y_low = graph_y + graph_height - static_cast<int>((low_glucose_threshold - min_glucose) * y_scale);
+
+    // Ensure y positions are within the graph's bounds
+    y_high = std::max(graph_y, std::min(graph_y + graph_height, y_high));
+    y_low = std::max(graph_y, std::min(graph_y + graph_height, y_low));
+
+    // Draw dotted line for high glucose threshold
+    for (int x = graph_x; x < graph_x + graph_width; x += 4) {
+        display.drawPixel(x, y_high, WHITE); // Draw a pixel every 4 units
+    }
+
+    // Draw dotted line for low glucose threshold
+    for (int x = graph_x; x < graph_x + graph_width; x += 4) {
+        display.drawPixel(x, y_low, WHITE); // Draw a pixel every 4 units
+    }
 
 
     display.display();

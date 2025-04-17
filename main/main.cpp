@@ -148,7 +148,7 @@ while (true) {
     // sensor.m_uid.assign(uid, uid + sizeof(uid));
 
     /// If the result code was that a card had been read, and is TI tag ///
-    if (rc == ISO15693_EC_OK && uid[6] == cgm::TEXAS_INSTRUMENTS) { 
+    if (rc == ISO15693_EC_OK && uid[6] == cgm::TEXAS_INSTRUMENTS) {
         ESP_LOGI(TAG, "Texas Instruments tag detected");
         
         // Format each byte as HEX, padded with leading zeros if required
@@ -172,7 +172,7 @@ while (true) {
         ESP_LOGD(TAG, "getPatchInfo ret: %d", ret);
         // TODO: fix getPatchInfo, remove hardcoded values
         // std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X31, 0X1F};
+        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X45, 0X07};
         sensor.m_patch_info.assign(patch_info.begin(), patch_info.end());
 
         /// Check sensor is Libre 2 EU (currently only sensor tested) ///
@@ -252,11 +252,14 @@ while (true) {
         }
 
         /// Display current NFC values on screen ///
-        auto trend = cgm::calculate_glucose_roc(cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true));
+        // auto trend = cgm::calculate_glucose_roc(cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true));
 
         auto current_glucose = cgm::calculate_glucose_mmol(latest_record_no_error);
 
-        draw_glucose_display(display, current_glucose, time_since_reading, trend);
+        // draw_glucose_display(display, current_glucose, time_since_reading, trend);
+
+        auto contiguous_historic_records = cgm::calculate_contiguous_records(sensor.m_fram_data.historic_records, sensor.m_fram_data.historic_index, false);
+        draw_historic_display(display, current_glucose, contiguous_historic_records);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
         } else { // If a card is not detected
