@@ -58,6 +58,22 @@ glucose_trend calculate_glucose_roc(std::vector<fram_record> glucose_vector) {
     }
 }
 
+double calculate_glucose_15_minute_predicton(glucose_trend trend, double current_glucose) {
+    switch (trend) {
+        case glucose_trend::RISING_FAST:
+            return current_glucose + 30.0; // 2 mg/dL per minute
+        case glucose_trend::RISING_SLOW:
+            return current_glucose + 15.0; // 1 mg/dL per minute
+        case glucose_trend::FALLING_FAST:
+            return current_glucose - 30.0; // 2 mg/dL per minute
+        case glucose_trend::FALLING_SLOW:
+            return current_glucose - 15.0; // 1 mg/dL per minute
+        default:
+            return current_glucose; // No change
+    }
+
+}
+
 std::vector<fram_record> calculate_contiguous_records(std::vector<fram_record>& records, int start_index, bool remove_errors) {
     std::vector<fram_record> contiguous_records;
     contiguous_records.reserve(records.size()); // Reserve space for all records

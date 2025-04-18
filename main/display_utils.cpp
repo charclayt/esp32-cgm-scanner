@@ -80,7 +80,7 @@ void draw_default_display(Adafruit_SSD1306& display) {
     display.display();
 }
 
-void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int time_since_reading, cgm::glucose_trend trend) {
+void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int time_since_reading, cgm::glucose_trend trend, double predicted_glucose) {
     int16_t x1, y1;
     uint16_t w, h;
 
@@ -104,9 +104,9 @@ void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int t
     }
 
     // Draw seperation line
-    display.drawLine(SCREEN_WIDTH * 0.85, SCREEN_HEIGHT, SCREEN_WIDTH * 0.85, 0, SSD1306_WHITE);
+    display.drawLine(SCREEN_WIDTH * 0.8, SCREEN_HEIGHT, SCREEN_WIDTH * 0.8, 0, SSD1306_WHITE);
 
-    int16_t trend_x = SCREEN_WIDTH * 0.9;
+    int16_t trend_x = SCREEN_WIDTH * 0.85;
     int16_t trend_y = SCREEN_HEIGHT / 3;
 
     // Set arrow icon in top-right corner
@@ -129,7 +129,11 @@ void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int t
     }
 
     // TODO: Display predicted glucose level (15 minutes) in bottom-right corner
-
+    display.setCursor(SCREEN_WIDTH * 0.83, SCREEN_HEIGHT * 0.75);
+    display.setTextSize(1);
+    // display.println("predicted");
+    // display.setCursor(SCREEN_WIDTH * 0.9, SCREEN_HEIGHT * 0.85);
+    display.println(std::format("{:.1f}", predicted_glucose).c_str());
 
     display.display();
 }
@@ -147,9 +151,9 @@ void draw_historic_display(Adafruit_SSD1306& display, double current_glucose, st
     std::reverse(historic_records.begin(), historic_records.end());
 
     // Display historic glucose values in debug mode
-    for (auto& record : historic_records) {
-        double glucose = cgm::calculate_glucose_mmol(record);
-        ESP_LOGD(TAG, "Historic glucose: %f", glucose);
+    for (auto i = 0; i < historic_records.size(); i++) {
+        double glucose = cgm::calculate_glucose_mmol(historic_records[i]);
+        ESP_LOGD(TAG, "Historic glucose %d: %.2f", i, glucose);
     }
 
     // Define allowed glucose range for display
@@ -189,10 +193,10 @@ void draw_historic_display(Adafruit_SSD1306& display, double current_glucose, st
     const double x_scale = static_cast<double>(graph_width) / (num_records - 1);
     const double y_scale = static_cast<double>(graph_height) / (max_glucose - min_glucose);
     for (int i = 0; i < num_records - 1; i++) {
-        // // Skip this segment if the current or next record has an error
-        // if (historic_records[i].has_error || historic_records[i + 1].has_error) {
-        //     continue;
-        // }
+        // Skip this segment if the current or next record has an error (create blank space)
+        if (historic_records[i].has_error || historic_records[i + 1].has_error) {
+            continue;
+        }
 
         int x1 = graph_x + static_cast<int>(i * x_scale);
         int y1 = graph_y + graph_height - static_cast<int>((cgm::calculate_glucose_mmol(historic_records[i]) - min_glucose) * y_scale);

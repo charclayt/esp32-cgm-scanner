@@ -29,6 +29,16 @@ glucose_trend calculate_glucose_roc(std::vector<fram_record> glucose_vector);
  */
 glucose_trend calculate_glucose_roc(std::vector<ble_record> glucose_vector);
 
+/**
+ * @brief Calculate the predicted glucose level 15 minutes into the future using linear regression.
+ * @note lower rate of change = 1mg/dL per minute == 15mg/dL. higher rate of change = 2mg/dL per minute == 30mg/dL
+ * 
+ * @param trend the trend to use for prediction
+ * @param current_glucose the current glucose level
+ * @return `double` - the predicted glucose in 15 minutes
+ */
+double calculate_glucose_15_minute_predicton(glucose_trend trend, double current_glucose);
+
 /// Helper functions ///
 
 /**

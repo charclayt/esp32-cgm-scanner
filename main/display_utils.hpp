@@ -21,8 +21,9 @@ void draw_default_display(Adafruit_SSD1306& display);
  * @param glucose_level the current glucose level
  * @param time_since_reading time since last reading without error
  * @param trend the glucose trend
+ * @param predicted_glucose the predicted glucose level in 15 minutes
  */
-void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int time_since_reading, cgm::glucose_trend trend = cgm::glucose_trend::STEADY);
+void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int time_since_reading, cgm::glucose_trend trend, double predicted_glucose);
 
 /**
  * @brief draw the historic glucose display, including a graph of the last 8 hours of glucose data, and the average glucose level in the timeframe

@@ -93,6 +93,9 @@ fram_record::fram_record(const std::shared_ptr<FactoryCalibration> calibration, 
 
     // calculate glucose value
     glucose_value = calibration->calibrate(raw_glucose, raw_temperature, temperature_adjustment);
+    if (glucose_value < 0) {
+        glucose_value = 0;
+    }
 }
 
 /*

@@ -166,8 +166,8 @@ while (true) {
         auto ret = nfc.getPatchInfo(buffer);
         ESP_LOGD(TAG, "getPatchInfo ret: %d", ret);
         // TODO: fix getPatchInfo, remove hardcoded values
-        // std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X68, 0X03};
+        std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
+        // std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X88, 0X1A};
 
         /// Check sensor is Libre 2 EU (currently only sensor tested) ///
         // if (cgm::get_sensor_type(sensor.m_patch_info) != cgm::sensor_type::LIBRE2EU) {
@@ -208,13 +208,14 @@ while (true) {
         // DEBUG - log all FRAM trend records
         for (int i = 0; i < sensor.m_fram_data.trend_records.size(); i++) {
             const auto& record = sensor.m_fram_data.trend_records[i];
-            ESP_LOGD(TAG, "FRAM TREND RECORD %d - Error: %d Negative %d Raw glucose: %f Raw temperature: %f Temperature adjustment: %f",
+            ESP_LOGD(TAG, "FRAM TREND RECORD %d - Error: %d, Negative %d, Raw glucose: %f, Raw temperature: %f, Temperature adjustment: %f, Calibrated glucose: %f",
                 i + 1,
                 record.has_error,
                 record.negative,
                 record.raw_glucose,
                 record.raw_temperature,
-                record.temperature_adjustment);
+                record.temperature_adjustment,
+                record.glucose_value);
         }
 
         /// Get most recent trend record without error and time it was taken ///
@@ -246,14 +247,16 @@ while (true) {
         }
 
         /// Display current NFC values on screen ///
-        // auto trend = cgm::calculate_glucose_roc(cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true));
+        auto trend = cgm::calculate_glucose_roc(cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true));
 
         auto current_glucose = cgm::calculate_glucose_mmol(latest_record_no_error);
 
-        // draw_glucose_display(display, current_glucose, time_since_reading, trend);
+        auto predicted_glucose = cgm::calculate_glucose_15_minute_predicton(trend, current_glucose);
 
-        auto contiguous_historic_records = cgm::calculate_contiguous_records(sensor.m_fram_data.historic_records, sensor.m_fram_data.historic_index, false);
-        draw_historic_display(display, current_glucose, contiguous_historic_records);
+        draw_glucose_display(display, current_glucose, time_since_reading, trend, predicted_glucose);
+
+        // auto contiguous_historic_records = cgm::calculate_contiguous_records(sensor.m_fram_data.historic_records, sensor.m_fram_data.historic_index, false);
+        // draw_historic_display(display, current_glucose, contiguous_historic_records);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
         } else { // If a card is not detected
