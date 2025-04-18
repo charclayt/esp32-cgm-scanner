@@ -2,9 +2,11 @@
 #define __CGM_BLE_HPP__
 
 #include <record.hpp>
+#include <sensor/factory_calibration.hpp>
 
-#include <vector>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace cgm {
 
@@ -23,9 +25,10 @@ struct BLE_data {
     /**
      * @brief Construct a new ble data object
      * 
+     * @param calibration the factory calibration to be used
      * @param ble the BLE data to be parsed
      */
-    BLE_data(std::vector<uint8_t>& ble);
+    BLE_data(const std::shared_ptr<FactoryCalibration> calibration, std::vector<uint8_t>& ble);
 
     // BLE data components:
 

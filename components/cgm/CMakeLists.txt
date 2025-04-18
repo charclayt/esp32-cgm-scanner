@@ -1,4 +1,5 @@
 idf_component_register(SRCS
+                        "sensor/factory_calibration.cpp"
                         "sensor/sensor.cpp"
                         "sensor/sensor_family.cpp"
                         "sensor/sensor_region.cpp"
@@ -7,6 +8,7 @@ idf_component_register(SRCS
                         "sensor/sensor_types.cpp"
                         "ble.cpp"
                         "calculations.cpp"
+                        "common.cpp"
                         "crc.cpp"
                         "decrypt.cpp"
                         "fram.cpp"

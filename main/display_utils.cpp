@@ -134,7 +134,7 @@ void draw_glucose_display(Adafruit_SSD1306& display, double glucose_level, int t
     display.display();
 }
 
-void draw_historic_display(Adafruit_SSD1306& display, double& current_glucose, std::vector<cgm::fram_record>& historic_records) {
+void draw_historic_display(Adafruit_SSD1306& display, double current_glucose, std::vector<cgm::fram_record>& historic_records) {
     display.clearDisplay();
     display.cp437(true);
 

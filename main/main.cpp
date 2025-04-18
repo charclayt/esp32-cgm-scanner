@@ -97,6 +97,8 @@ extern "C" void app_main() {
     esp_log_level_set("*", ESP_LOG_DEBUG);
     ESP_LOGI(TAG, "UploadedL %s %s", __DATE__, __TIME__);
 
+    ESP_LOGI(TAG, "Free heap size: %" PRIu32, esp_get_free_heap_size());
+
     esp_task_wdt_config_t wdtConfig = {
         .timeout_ms = WDT_TIMEOUT * 1000,
         .idle_core_mask = 0,
@@ -125,10 +127,6 @@ extern "C" void app_main() {
             break;
         }
     }
-    
-    display.display();
-
-    display.clearDisplay();
 
     ///// TODO: default display - if sensor stored, display that -> else "no sensor found" /////
     draw_default_display(display);
@@ -143,9 +141,6 @@ while (true) {
     uint8_t uid[8];
     ISO15693ErrorCode rc = nfc.getInventory(uid);
     ESP_LOGD(TAG, "getInventory returned: %d", rc);
-
-    sensor.set_UID(uid);
-    // sensor.m_uid.assign(uid, uid + sizeof(uid));
 
     /// If the result code was that a card had been read, and is TI tag ///
     if (rc == ISO15693_EC_OK && uid[6] == cgm::TEXAS_INSTRUMENTS) {
@@ -172,37 +167,37 @@ while (true) {
         ESP_LOGD(TAG, "getPatchInfo ret: %d", ret);
         // TODO: fix getPatchInfo, remove hardcoded values
         // std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X45, 0X07};
-        sensor.m_patch_info.assign(patch_info.begin(), patch_info.end());
+        std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X68, 0X03};
 
         /// Check sensor is Libre 2 EU (currently only sensor tested) ///
-        if (cgm::get_sensor_type(sensor.m_patch_info) != cgm::sensor_type::LIBRE2EU) {
-            ESP_LOGE(TAG, "Sensor is not Libre 2 EU");
-            display_error(display, "Incompatible sensor");
-            continue;
-        }
+        // if (cgm::get_sensor_type(sensor.m_patch_info) != cgm::sensor_type::LIBRE2EU) {
+        //     ESP_LOGE(TAG, "Sensor is not Libre 2 EU");
+        //     display_error(display, "Incompatible sensor");
+        //     continue;
+        // }
 
         /// Read sensor FRAM and decrypt ///
         std::vector<uint8_t> FRAM_vector;
         FRAM_vector.reserve(43 * blockSize);
 
-        nfc.read_FRAM(sensor.m_uid, blockSize, FRAM_vector);
+        rc = nfc.read_FRAM(uid, blockSize, FRAM_vector);
+        if (rc != ISO15693_EC_OK) {
+            ESP_LOGE(TAG, "Error reading FRAM");
+            display_error(display, "Error reading FRAM");
+            continue;
+        }
 
-        sensor.m_fram_data = cgm::FRAM_data(cgm::decrypt_FRAM(sensor.m_uid, sensor.m_patch_info, FRAM_vector));
+        sensor.initialise(uid, patch_info.data(), FRAM_vector);
+
         if (sensor.m_fram_data.error) {
             ESP_LOGE(TAG, "Error decrypting FRAM, returning to main loop");
             display_error(display, "Error decrypting FRAM");
             continue;
         }
 
-        /// set and log sensor details ///
-        sensor.m_state = cgm::get_sensor_state(sensor.m_fram_data.sensor_state);
+        /// log sensor details ///
         ESP_LOGI(TAG, "Sensor state: %s", cgm::to_string(sensor.m_state).c_str());
-
-        sensor.m_region = cgm::get_sensor_region(sensor.m_patch_info);
         ESP_LOGI(TAG, "Sensor region: %s", cgm::to_string(sensor.m_region).c_str());
-
-        sensor.m_serial_numer = cgm::get_sensor_serial_number(sensor.m_uid, sensor.m_patch_info);
         ESP_LOGI(TAG, "Sensor serial: %s", sensor.m_serial_numer.c_str());
 
         ESP_LOGI(TAG, "Trend pointer: %d", sensor.m_fram_data.trend_index);
@@ -213,7 +208,7 @@ while (true) {
         // DEBUG - log all FRAM trend records
         for (int i = 0; i < sensor.m_fram_data.trend_records.size(); i++) {
             const auto& record = sensor.m_fram_data.trend_records[i];
-            ESP_LOGD(TAG, "FRAM TREND RECORD %d - Error: %d Negative %d Raw glucose: %d Raw temperature: %d Temperature adjustment: %d",
+            ESP_LOGD(TAG, "FRAM TREND RECORD %d - Error: %d Negative %d Raw glucose: %f Raw temperature: %f Temperature adjustment: %f",
                 i + 1,
                 record.has_error,
                 record.negative,
@@ -223,7 +218,6 @@ while (true) {
         }
 
         /// Get most recent trend record without error and time it was taken ///
-        // TODO: modify this once fram trends are restructured in order of time
         auto latest_record_no_error = sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1];
         auto time_since_reading = 0;
         if (latest_record_no_error.has_error) {

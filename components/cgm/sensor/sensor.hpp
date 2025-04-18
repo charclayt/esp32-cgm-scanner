@@ -1,17 +1,19 @@
 #ifndef __CGM_SENSOR_HPP__
 #define __CGM_SENSOR_HPP__
 
-#include <fram.hpp>
 #include <ble.hpp>
+#include <fram.hpp>
+#include <sensor/factory_calibration.hpp>
 #include <sensor/sensor_family.hpp>
 #include <sensor/sensor_region.hpp>
 #include <sensor/sensor_serial.hpp>
 #include <sensor/sensor_state.hpp>
 #include <sensor/sensor_types.hpp>
 
-#include <vector>
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace cgm {
 
@@ -28,6 +30,25 @@ public:
      * 
      */
     sensor() = default;
+
+    /**
+     * @brief Initialise the sensor object
+     * 
+     * @param uid 
+     * @param patch_info 
+     * @param fram 
+     */
+    void initialise(uint8_t* uid, uint8_t* patch_info, std::vector<uint8_t> fram);
+
+    /**
+     * @brief Initialise the sensor object
+     * 
+     * @param uid 
+     * @param patch_info 
+     * @param fram 
+     * @param calibration 
+     */
+    void initialise(uint8_t* uid, uint8_t* patch_info, std::vector<uint8_t> fram, std::shared_ptr<FactoryCalibration> calibration);
 
     /**
      * @brief Destroy the Sensor object
@@ -67,13 +88,15 @@ public:
     std::vector<uint8_t> m_uid;
     std::vector<uint8_t> m_patch_info;
     std::string m_serial_numer;
-    sensor_family m_family;
+    // sensor_family m_family;
     sensor_region m_region;
     sensor_state m_state;
     sensor_type m_type;
 
     FRAM_data m_fram_data;
     BLE_data m_ble_data;
+
+    std::shared_ptr<FactoryCalibration> m_calibration;
 };
 
 } // namespace cgm

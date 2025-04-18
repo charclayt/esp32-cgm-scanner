@@ -1,8 +1,11 @@
 #ifndef __CGM_RECORD_HPP__
 #define __CGM_RECORD_HPP__
 
-#include <vector>
+#include <sensor/factory_calibration.hpp>
+
+#include <memory>
 #include <cstdint>
+#include <vector>
 
 namespace cgm {
 
@@ -21,16 +24,19 @@ struct fram_record {
     /**
      * @brief Construct a new fram record object
      * 
+     * @param calibration the factory calibration to be used
      * @param record the record to be parsed
      */
-    fram_record(const std::vector<uint8_t> record);
+    fram_record(const std::shared_ptr<FactoryCalibration> calibration, std::vector<uint8_t> record);
 
 
     bool negative;
     bool has_error;
-    int raw_glucose;
-    int raw_temperature;
-    int temperature_adjustment;
+    double raw_glucose;
+    double raw_temperature;
+    double temperature_adjustment;
+
+    double glucose_value;
 };
 
 /**
@@ -47,15 +53,18 @@ struct ble_record {
     /**
      * @brief Construct a new ble record object
      * 
+     * @param calibration the factory calibration to be used
      * @param record the record to be parsed
      */
-    ble_record(const std::vector<uint8_t> record);
+    ble_record(const std::shared_ptr<FactoryCalibration> calibration, const std::vector<uint8_t> record);
 
 
     bool negative;
-    int raw_glucose;
-    int raw_temperature;
-    int temperature_adjustment;
+    double raw_glucose;
+    double raw_temperature;
+    double temperature_adjustment;
+
+    double glucose_value;
 };
 
 } // namespace cgm

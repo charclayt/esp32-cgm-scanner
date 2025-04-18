@@ -11,12 +11,7 @@
 namespace cgm {
 
 double calculate_glucose_mmol(fram_record& record) {
-    // auto glcuose_mgdl = (0.113 * record.raw_glucose) - 21.1;
-    double glucose_mmol = record.raw_glucose / 18; // Convert to mmol/L
-
-    // TODO: apply calibration if needed (temperature adjustment, etc)
-
-    return glucose_mmol;
+    return record.glucose_value / 18; // Convert to mmol/L
 }
 
 glucose_trend calculate_glucose_roc(std::vector<fram_record> glucose_vector) {

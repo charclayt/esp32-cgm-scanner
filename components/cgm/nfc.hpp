@@ -21,43 +21,24 @@ using PN5180ISO15693::PN5180ISO15693;
  * @param block_size 
  * @param buffer 
  */
-void read_FRAM(std::vector<uint8_t>& uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
+ISO15693ErrorCode read_FRAM(uint8_t* uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
 
 /**
- * @brief 
+ * @brief Get the sensor info via NFC custom command '0xA1'
  * 
- * @param nfc
- * @param uid
- * @param block_size
- * @param buffer
- * 
- * @return populates the buffer with the header data
+ * @param buffer the buffer to fill with the sensor info
+ * @return `ISO15693ErrorCode` - the error code
  */
-void readHeader(PN5180ISO15693& nfc, std::vector<uint8_t>& uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
+ISO15693ErrorCode get_sensor_info(std::vector<uint8_t>& buffer);
 
 /**
- * @brief 
+ * @brief Initiate the BLE connection with the sensor via NFC custom command '0xA1, 0x1e'
  * 
- * @param nfc
- * @param uid
- * @param block_size
- * @param buffer
- * 
- * @return populates the buffer with the body data
+ * @param random_number a random number that acts as the secret key
+ * @param integrity_code part of the secret key, compiled of the first 2 bytes of random number and bytes 4 + 5 of the sensor info
+ * @return `ISO15693ErrorCode` - the error code
  */
-void readBody(const PN5180ISO15693& nfc, const std::vector<uint8_t>& uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
-
-/**
- * @brief 
- * 
- * @param nfc
- * @param uid
- * @param block_size
- * @param buffer
- * 
- * @return populates the buffer with the footer data
- */
-void readFooter(const PN5180ISO15693& nfc, const std::vector<uint8_t>& uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
+ISO15693ErrorCode initiate_ble_connection(uint8_t* random_number, uint8_t* integrity_code);
 
 };
 

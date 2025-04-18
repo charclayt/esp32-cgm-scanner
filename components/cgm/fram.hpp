@@ -2,9 +2,11 @@
 #define __CGM_FRAM_HPP__
 
 #include <record.hpp>
+#include <sensor/factory_calibration.hpp>
 
-#include <vector>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace cgm {
 
@@ -23,9 +25,10 @@ struct FRAM_data {
     /**
      * @brief Construct a new fram data object
      * 
+     * @param calibration the factory calibration to be used
      * @param fram the FRAM data to be parsed
      */
-    FRAM_data(const std::vector<uint8_t>& fram);
+    FRAM_data(const std::shared_ptr<FactoryCalibration> calibration, const std::vector<uint8_t>& fram);
 
     int error = false;
 
