@@ -162,12 +162,15 @@ while (true) {
         ESP_LOGI(TAG, "Block size: %d, Number of blocks: %d", blockSize, numBlocks);
 
         /// Get patch info ///
-        uint8_t buffer[7] = {};
-        auto ret = nfc.getPatchInfo(buffer);
-        ESP_LOGD(TAG, "getPatchInfo ret: %d", ret);
-        // TODO: fix getPatchInfo, remove hardcoded values
-        std::vector<uint8_t> patch_info = {0xC5, 0x09, 0x30, 0x01, 0x00, 0x00};
-        // std::vector<uint8_t> patch_info = {0xC6, 0X09, 0X31, 0X01, 0X88, 0X1A};
+        std::vector<uint8_t> patch_info;
+        patch_info.reserve(6);
+        auto ret = nfc.get_sensor_info(patch_info);
+        if (ret != ISO15693_EC_OK) {
+            ESP_LOGE(TAG, "Error getting sensor info");
+            display_error(display, "Error getting sensor info");
+            continue;
+        }
+        ESP_LOGD(TAG, "get_sensor_info ret: %d", ret);
 
         /// Check sensor is Libre 2 EU (currently only sensor tested) ///
         // if (cgm::get_sensor_type(sensor.m_patch_info) != cgm::sensor_type::LIBRE2EU) {
