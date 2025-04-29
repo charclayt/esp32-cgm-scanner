@@ -2,8 +2,12 @@
 #include <sdkconfig.h>
 #include <esp_log.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include <common_main.hpp>
 #include <display_utils.hpp>
+// #include <ble_main.hpp>
 
 // PN5180 includes (NFC reader)
 #include "PN5180.h"
@@ -16,7 +20,13 @@
 #include <Adafruit_SSD1306.h>
 
 // BLE includes
-// #include "NimBLEDevice.h"
+#include "nimble/nimble_port.h"
+#include "nimble/nimble_port_freertos.h"
+#include "host/ble_hs.h"
+#include "host/util/util.h"
+#include "services/gap/ble_svc_gap.h"
+#include "services/gatt/ble_svc_gatt.h"
+
 
 // CGM includes
 #include "calculations.hpp"
@@ -40,9 +50,7 @@
 #include <iostream>
 #include <iomanip>
 
-// #include <logger.hpp>
-
-#define WDT_TIMEOUT 60 //5 seconds WDT
+#define WDT_TIMEOUT 20 // 20 seconds WDT
 #define TAG "CGM_SCANNER"
 
 // Global NFC 
@@ -52,7 +60,7 @@ cgm::CGM_NFC nfc(PN5180_NSS, PN5180_BUSY, PN5180_RST);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI,
                          OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
-// BLEScan* pBLEScan;
+// BLE variables
 bool device_found = false;
 
 // Global sensor
@@ -60,36 +68,6 @@ bool device_found = false;
 
 // Global VSPI object for SPI communication - used for OLED display (PN5180 uses HSPI and manages internally)
 SPIClass vspi(2);
-
-std::string targetSensorName = ""; // TODO: this should be sensor serial number
-
-// TODO: move / fix
-// class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
-//     void onResult(BLEAdvertisedDevice advertisedDevice) {
-//         if (std::string(advertisedDevice.getName().c_str()).find(targetSensorName) != std::string::npos) {
-//             BLEDevice::getScan()->stop();
-
-//             Serial.println(F("Found target sensor!"));
-//             device_found = true;
-
-//             // BLEClient*  pClient  = BLEDevice::createClient();
-//             // pClient->connect(&advertisedDevice);
-//             // BLERemoteService* pRemoteService = pClient->getService("FDE3");
-//             // if (pRemoteService != nullptr) {
-//             //     BLERemoteCharacteristic* pLoginCharacteristic = pRemoteService->getCharacteristic("F001");
-//             //     if (pLoginCharacteristic != nullptr) {
-//             //         // Enable notifications and write login credentials
-//             //         pLoginCharacteristic->registerForNotify([](BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
-//             //             // Handle notifications from the sensor
-//             //         });
-//             //         String loginCredential = ""; // Set the login credential here
-//             //         pLoginCharacteristic->writeValue(loginCredential, false);
-//             //     }
-//             // }
-//         }
-//     }
-// };
-
 
 extern "C" void app_main() {
     vspi.begin(OLED_CLK, OLED_DC, OLED_MOSI, OLED_CS);
@@ -127,6 +105,21 @@ extern "C" void app_main() {
             break;
         }
     }
+
+    // BLE
+    // nimble_port_init();
+    // ble_svc_gap_init();
+    // ble_svc_gatt_init();
+
+    // ble_hs_cfg.sync_cb = []() {
+    //     ESP_LOGI(TAG_BLE, "BLE host synced");
+    //     // Do not start scan immediately — wait until NFC reads a valid sensor
+    // };
+
+    // nimble_port_freertos_init([](void *param) {
+    //     ESP_LOGI(TAG, "NimBLE host task started");
+    //     nimble_port_run();
+    // });
 
     ///// TODO: default display - if sensor stored, display that -> else "no sensor found" /////
     draw_default_display(display);
@@ -199,9 +192,11 @@ while (true) {
         }
 
         /// log sensor details ///
-        ESP_LOGI(TAG, "Sensor state: %s", cgm::to_string(sensor.m_state).c_str());
-        ESP_LOGI(TAG, "Sensor region: %s", cgm::to_string(sensor.m_region).c_str());
         ESP_LOGI(TAG, "Sensor serial: %s", sensor.m_serial_numer.c_str());
+        ESP_LOGI(TAG, "Sensor family: %s", cgm::to_string(sensor.m_family).c_str());
+        ESP_LOGI(TAG, "Sensor region: %s", cgm::to_string(sensor.m_region).c_str());
+        ESP_LOGI(TAG, "Sensor state: %s", cgm::to_string(sensor.m_state).c_str());
+        ESP_LOGI(TAG, "Sensor type: %s", cgm::to_string(sensor.m_type).c_str());
 
         ESP_LOGI(TAG, "Trend pointer: %d", sensor.m_fram_data.trend_index);
         ESP_LOGI(TAG, "Historic pointer: %d", sensor.m_fram_data.historic_index);
@@ -211,7 +206,7 @@ while (true) {
         // DEBUG - log all FRAM trend records
         for (int i = 0; i < sensor.m_fram_data.trend_records.size(); i++) {
             const auto& record = sensor.m_fram_data.trend_records[i];
-            ESP_LOGD(TAG, "FRAM TREND RECORD %d - Error: %d, Negative %d, Raw glucose: %f, Raw temperature: %f, Temperature adjustment: %f, Calibrated glucose: %f",
+            ESP_LOGD(TAG, "FRAM TREND RECORD %d - Error: %d, Negative %d, Raw glucose: %f, Raw temperature: %f, Temperature adjustment: %f, Calibrated glucose: %d",
                 i + 1,
                 record.has_error,
                 record.negative,
@@ -221,45 +216,72 @@ while (true) {
                 record.glucose_value);
         }
 
+        std::vector<uint8_t> ble_mac_address;
+        ble_mac_address.reserve(6);
+        rc = nfc.initiate_ble_connection(sensor.m_uid, sensor.m_patch_info, ble_mac_address);
+        if (rc == ISO15693_EC_OK) {
+            // memcpy(ble_main::target_ble_address, ble_mac_address.data(), 6);
+            // ble_main::ble_target_set = true;
+
+            // ESP_LOGI(TAG, "Target BLE address set: %02X:%02X:%02X:%02X:%02X:%02X",
+            //         ble_main::target_ble_address[5], ble_main::target_ble_address[4], ble_main::target_ble_address[3],
+            //         ble_main::target_ble_address[2], ble_main::target_ble_address[1], ble_main::target_ble_address[0]);
+
+            // // Start scanning for sensor
+            // ble_main::start_scan();
+        } 
+        // else {
+        //     display_error(display, "Error initiating BLE connection");
+        //     continue;   
+        // }
+
         /// Get most recent trend record without error and time it was taken ///
         auto latest_record_no_error = sensor.m_fram_data.trend_records[sensor.m_fram_data.trend_index - 1];
         auto time_since_reading = 0;
-        if (latest_record_no_error.has_error) {
+        if (latest_record_no_error.has_error || latest_record_no_error.glucose_value == 0) {
             ESP_LOGI(TAG, "Most recent trend record has error, getting closest valid record");
             auto found_valid_record = false;
-            // auto contiguous_records = cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true);
-            for (int i = sensor.m_fram_data.trend_index - 2; i != sensor.m_fram_data.trend_index - 1; i--) {
+            auto contiguous_records = cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, false);
+            for (auto i = 1; i < contiguous_records.size(); i++) {
                 time_since_reading += 1; // add 1 minute for each record
-                if (!sensor.m_fram_data.trend_records[i].has_error) {
-                    latest_record_no_error = sensor.m_fram_data.trend_records[i];
+                if (!contiguous_records[i].has_error && contiguous_records[i].glucose_value != 0) {
+                    latest_record_no_error = contiguous_records[i];
                     found_valid_record = true;
                     ESP_LOGI(TAG, "Found valid record %d, which is %d minutes ago", i + 1, time_since_reading);
                     break;
                 }
-                // Loop back around to the end of fram_data.trend_records, and continue until fram_data.trend_index - 1
-                if (i == 0) {
-                    i = cgm::NUM_FRAM_TREND_RECORDS;
-                }
             }
+            // for (int i = sensor.m_fram_data.trend_index - 2; i != sensor.m_fram_data.trend_index - 1; i--) {
+            //     time_since_reading += 1; // add 1 minute for each record
+            //     if (!sensor.m_fram_data.trend_records[i].has_error && sensor.m_fram_data.trend_records[i].glucose_value != 0) {
+            //         latest_record_no_error = sensor.m_fram_data.trend_records[i];
+            //         found_valid_record = true;
+            //         ESP_LOGI(TAG, "Found valid record %d, which is %d minutes ago", i + 1, time_since_reading);
+            //         break;
+            //     }
+            //     // Loop back around to the end of fram_data.trend_records, and continue until fram_data.trend_index - 1
+            //     if (i == 0) {
+            //         i = cgm::NUM_FRAM_TREND_RECORDS;
+            //     }
+            // }
             if (!found_valid_record) {
                 ESP_LOGE(TAG, "No valid record found");
-                // TODO: display ERR on CGM screen
                 display_error(display, "No valid record found");
                 continue;
             }
         }
 
         /// Display current NFC values on screen ///
-        auto trend = cgm::calculate_glucose_roc(cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true));
+        // auto trend = cgm::calculate_glucose_roc(cgm::calculate_contiguous_records(sensor.m_fram_data.trend_records, sensor.m_fram_data.trend_index, true));
 
-        auto current_glucose = cgm::calculate_glucose_mmol(latest_record_no_error);
+        auto current_glucose = cgm::calculate_glucose_mmol(latest_record_no_error.glucose_value);
 
-        auto predicted_glucose = cgm::calculate_glucose_15_minute_predicton(trend, current_glucose);
+        // auto predicted_glucose = cgm::calculate_glucose_mmol(cgm::calculate_glucose_15_minute_predicton(trend, latest_record_no_error));
 
-        draw_glucose_display(display, current_glucose, time_since_reading, trend, predicted_glucose);
+        // draw_glucose_display(display, current_glucose, time_since_reading, trend, predicted_glucose);
 
-        // auto contiguous_historic_records = cgm::calculate_contiguous_records(sensor.m_fram_data.historic_records, sensor.m_fram_data.historic_index, false);
-        // draw_historic_display(display, current_glucose, contiguous_historic_records);
+        auto contiguous_historic_records = cgm::calculate_contiguous_records(sensor.m_fram_data.historic_records, sensor.m_fram_data.historic_index, false);
+        draw_historic_display(display, current_glucose, contiguous_historic_records);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
         } else { // If a card is not detected
