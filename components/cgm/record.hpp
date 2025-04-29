@@ -36,7 +36,8 @@ struct fram_record {
     double raw_temperature;
     double temperature_adjustment;
 
-    double glucose_value;
+    int glucose_value;
+    int offset;
 };
 
 /**
@@ -60,6 +61,7 @@ struct ble_record {
 
 
     bool negative;
+    bool has_error = false;
     double raw_glucose;
     double raw_temperature;
     double temperature_adjustment;

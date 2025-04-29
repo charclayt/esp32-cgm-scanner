@@ -9,9 +9,9 @@
 
 namespace cgm {
 
-double calculate_glucose_mmol(fram_record& record);
+double calculate_glucose_mmol(double raw_glucose);
 
-double calculate_glucose_mmol(ble_record& record);
+// double calculate_glucose_mmol(ble_record& record);
 
 /**
  * @brief calculate the rate of change of glucose values given using linear regression, for use in trend arrows, etc
@@ -34,10 +34,10 @@ glucose_trend calculate_glucose_roc(std::vector<ble_record> glucose_vector);
  * @note lower rate of change = 1mg/dL per minute == 15mg/dL. higher rate of change = 2mg/dL per minute == 30mg/dL
  * 
  * @param trend the trend to use for prediction
- * @param current_glucose the current glucose level
+ * @param current_record the current glucose record
  * @return `double` - the predicted glucose in 15 minutes
  */
-double calculate_glucose_15_minute_predicton(glucose_trend trend, double current_glucose);
+double calculate_glucose_15_minute_predicton(glucose_trend trend, fram_record& current_record);
 
 /// Helper functions ///
 

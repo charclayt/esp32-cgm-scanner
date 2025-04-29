@@ -34,9 +34,9 @@ public:
      * @param raw_glucose the raw glucose value
      * @param raw_temperature the raw temperature value
      * @param raw_temperature_adjustment the raw temperature adjustment value
-     * @return `double` - the calibrated glucose value in mg/dL
+     * @return `int` - the calibrated glucose value in mg/dL
      */
-    double calibrate(double raw_glucose, double raw_temperature, double raw_temperature_adjustment) const;
+    int calibrate(double raw_glucose, double raw_temperature, double raw_temperature_adjustment) const;
 
     /**
      * @brief Construct a new Factory Calibration object with libre calibration

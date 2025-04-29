@@ -15,11 +15,12 @@ public:
 using PN5180ISO15693::PN5180ISO15693;
 
 /**
- * @brief 
+ * @brief Read the FRAM data from the sensor
  * 
- * @param uid 
- * @param block_size 
- * @param buffer 
+ * @param uid the UID of the sensor
+ * @param block_size the size of the blocks to read
+ * @param buffer the buffer to fill with the FRAM data
+ * @return `ISO15693ErrorCode` - the error code
  */
 ISO15693ErrorCode read_FRAM(uint8_t* uid, const uint8_t block_size, std::vector<uint8_t>& buffer);
 
@@ -34,11 +35,16 @@ ISO15693ErrorCode get_sensor_info(std::vector<uint8_t>& buffer);
 /**
  * @brief Initiate the BLE connection with the sensor via NFC custom command '0xA1, 0x1e'
  * 
- * @param random_number a random number that acts as the secret key
- * @param integrity_code part of the secret key, compiled of the first 2 bytes of random number and bytes 4 + 5 of the sensor info
+ * @param uid the UID of the sensor
+ * @param sensor_info the sensor info
+ * @param buffer the buffer to fill with the peripheral MAC address to connect to
  * @return `ISO15693ErrorCode` - the error code
  */
-ISO15693ErrorCode initiate_ble_connection(uint8_t* random_number, uint8_t* integrity_code);
+ISO15693ErrorCode initiate_ble_connection(std::vector<uint8_t>& uid, std::vector<uint8_t>& sensor_info, std::vector<uint8_t>& buffer);
+
+private:
+
+uint32_t m_unlock_code = 42;
 
 };
 

@@ -1,8 +1,9 @@
 #ifndef __CGM_SENSOR_FAMILY_HPP__
 #define __CGM_SENSOR_FAMILY_HPP__
 
-#include <vector>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace cgm {
 
@@ -11,7 +12,7 @@ namespace cgm {
  * 
  */
 enum class sensor_family {
-    UNKNOWN,
+    UNKNOWN = -1,
     LIBRE1 = 0,
     LIBRE_PRO = 1,
     LIBRE2 = 3,
@@ -33,6 +34,14 @@ sensor_family get_sensor_family(const std::vector<uint8_t>& patch_info);
  * @return `sensor_family` - the sensor family 
  */
 sensor_family get_sensor_family(const uint8_t& family_byte);
+
+/**
+ * @brief convert sensor_family to string
+ * 
+ * @param family the sensor family to convert
+ * @return `std::string` - the string representation of the sensor family 
+ */
+std::string to_string(sensor_family family);
 
 } // namespace cgm
 

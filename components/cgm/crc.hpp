@@ -12,7 +12,8 @@ namespace cgm {
  * @param data the data to calculate the CRC16 for
  * @return `bool` - whether the calculated CRC16 matches the given CRC16
  */
-bool check_CRC16(const std::vector<uint8_t>& data);
+// bool check_CRC16(const std::vector<uint8_t>& data);
+bool check_CRC16(const std::vector<uint8_t>& data, size_t crcByte1, size_t crcByte2);
 
 /**
  * @brief 

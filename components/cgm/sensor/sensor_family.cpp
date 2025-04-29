@@ -31,4 +31,21 @@ sensor_family get_sensor_family(const uint8_t& family_byte) {
     }
 }
 
+std::string to_string(sensor_family family) {
+    switch (family) {
+        case sensor_family::UNKNOWN:
+            return "Unknown";
+        case sensor_family::LIBRE1:
+            return "Libre 1";
+        case sensor_family::LIBRE_PRO:
+            return "Libre Pro";
+        case sensor_family::LIBRE2:
+            return "Libre 2";
+        case sensor_family::LIBRE_SENSE:
+            return "Libre Sense";
+        default:
+            return "Unknown";
+    }
+}
+
 } // namespace cgm

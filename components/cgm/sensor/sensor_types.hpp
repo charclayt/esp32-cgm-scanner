@@ -1,9 +1,9 @@
 #ifndef __CGM_TYPES_HPP__
 #define __CGM_TYPES_HPP__
 
-#include <vector>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace cgm {
 

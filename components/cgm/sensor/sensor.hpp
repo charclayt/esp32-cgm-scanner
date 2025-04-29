@@ -88,7 +88,7 @@ public:
     std::vector<uint8_t> m_uid;
     std::vector<uint8_t> m_patch_info;
     std::string m_serial_numer;
-    // sensor_family m_family;
+    sensor_family m_family;
     sensor_region m_region;
     sensor_state m_state;
     sensor_type m_type;
