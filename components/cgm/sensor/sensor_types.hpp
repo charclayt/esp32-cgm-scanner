@@ -36,7 +36,7 @@ enum class sensor_type {
 sensor_type get_sensor_type(const std::vector<uint8_t>& patch_info);
 
 /**
- * @brief convert sensor_type to string
+ * @brief Convert sensor_type to string
  * 
  * @param type the sensor type to convert
  * @return `std::string` - the string representation of the sensor type 

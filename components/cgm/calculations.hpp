@@ -9,7 +9,13 @@
 
 namespace cgm {
 
-double calculate_glucose_mmol(double raw_glucose);
+/**
+ * @brief Calculate the glucose value in mmol/L from the calibrated glucose value in mg/dL
+ * 
+ * @param calibrated_glucose the calibrated glucose value in mg/dL
+ * @return `double` - the glucose value in mmol/L
+ */
+double calculate_glucose_mmol(double calibrated_glucose);
 
 // double calculate_glucose_mmol(ble_record& record);
 

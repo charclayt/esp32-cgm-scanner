@@ -10,10 +10,10 @@
 
 namespace cgm {
 
-double calculate_glucose_mmol(double raw_glucose) {
-    // return raw_glucose * (1.0/180.182);
-    return raw_glucose / 18.0;
-    // return (raw_glucose * 10) * (1.0/180.182); // Convert to mmol/L
+double calculate_glucose_mmol(double calibrated_glucose) {
+    // return calibrated_glucose * (1.0/180.182);
+    return calibrated_glucose / 18.0;
+    // return (calibrated_glucose * 10) * (1.0/180.182); // Convert to mmol/L
 }
 
 glucose_trend calculate_glucose_roc(std::vector<fram_record> glucose_vector) {

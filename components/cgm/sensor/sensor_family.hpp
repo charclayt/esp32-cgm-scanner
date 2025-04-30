@@ -36,7 +36,7 @@ sensor_family get_sensor_family(const std::vector<uint8_t>& patch_info);
 sensor_family get_sensor_family(const uint8_t& family_byte);
 
 /**
- * @brief convert sensor_family to string
+ * @brief Convert sensor_family to string
  * 
  * @param family the sensor family to convert
  * @return `std::string` - the string representation of the sensor family 

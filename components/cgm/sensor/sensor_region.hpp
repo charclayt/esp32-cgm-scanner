@@ -36,7 +36,7 @@ sensor_region get_sensor_region(const std::vector<uint8_t>& patch_info);
 sensor_region get_sensor_region(const uint8_t& region_byte);
 
 /**
- * @brief convert sensor_region to string
+ * @brief Convert sensor_region to string
  * 
  * @param region the sensor region to convert
  * @return `std::string` - the string representation of the sensor region 

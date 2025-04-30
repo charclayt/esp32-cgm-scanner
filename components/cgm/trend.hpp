@@ -18,7 +18,7 @@ enum class glucose_trend {
 };
 
 /**
- * @brief convert glucose_trend to string
+ * @brief Convert glucose_trend to string
  * 
  * @param trend the glucose trend to convert
  * @return `std::string` - the string representation of the glucose trend

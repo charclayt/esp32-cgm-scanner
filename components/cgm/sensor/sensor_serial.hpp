@@ -17,7 +17,7 @@ namespace cgm {
 std::string get_sensor_serial_number(const std::vector<uint8_t>& uid, const std::vector<uint8_t>& patch_info);
 
 /**
- * @brief 
+ * @brief The serial lookup table for converting bytes to serial number characters
  * 
  */
 const std::vector<std::string> serial_lookup = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",

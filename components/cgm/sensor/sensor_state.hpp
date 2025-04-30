@@ -38,7 +38,7 @@ sensor_state get_sensor_state(const std::vector<uint8_t>& fram);
 sensor_state get_sensor_state(const uint8_t& state_byte);
 
 /**
- * @brief convert sensor_state to string
+ * @brief Convert sensor_state to string
  * 
  * @param state the sensor state to convert
  * @return `std::string` - the string representation of the sensor state

@@ -21,6 +21,15 @@ const auto BLE_RECORD_SIZE_BYTES = 4;
  */
 static const std::vector<uint16_t> keys = {0xA0C5, 0x6860, 0x0000, 0x14C6};
 
+/**
+ * @brief Helper function to read a specific number of bits from a byte array
+ * 
+ * @param buffer the byte array to read from
+ * @param byte_offset the byte offset to start reading from
+ * @param bit_offset the bit offset within the byte to start reading from
+ * @param bit_count the number of bits to read
+ * @return `int` - the int value of the read bits
+ */
 int read_bits(const std::vector<uint8_t>& buffer, int byte_offset, int bit_offset, int bit_count);
 
 /**

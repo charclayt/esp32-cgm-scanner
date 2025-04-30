@@ -10,7 +10,7 @@
 namespace cgm {
 
 /**
- * @brief a record read from the sensor FRAM containing glucose and temperature data
+ * @brief A record read from the sensor FRAM containing glucose and temperature data
  * 
  */
 struct fram_record {
@@ -41,7 +41,7 @@ struct fram_record {
 };
 
 /**
- * @brief a record received from the sensor via BLE containing glucose and temperature data
+ * @brief A record received from the sensor via BLE containing glucose and temperature data
  * 
  */
 struct ble_record {
