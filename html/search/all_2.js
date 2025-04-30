@@ -1,0 +1,7 @@
+var searchData=
+[
+  ['factorycalibration_0',['factorycalibration',['../classcgm_1_1FactoryCalibration.html',1,'cgm::FactoryCalibration'],['../classcgm_1_1FactoryCalibration.html#a243f73f74e8c4710a4df808554c28579',1,'cgm::FactoryCalibration::FactoryCalibration()=default'],['../classcgm_1_1FactoryCalibration.html#a0634b91fae56bb8f21e266fa1045060c',1,'cgm::FactoryCalibration::FactoryCalibration(int i1, int i2, double i3, double i4, double i5, double i6)']]],
+  ['footer_5fcrc_1',['footer_crc',['../structcgm_1_1FRAM__data.html#a7d78939721947c4a2a100bc476070983',1,'cgm::FRAM_data']]],
+  ['fram_5fdata_2',['fram_data',['../structcgm_1_1FRAM__data.html',1,'cgm::FRAM_data'],['../structcgm_1_1FRAM__data.html#ae54de1b8f1f81a987e0d50d2f0b3c86b',1,'cgm::FRAM_data::FRAM_data()=default'],['../structcgm_1_1FRAM__data.html#a4e720c5e6cae83d5d192d9f24ce24e09',1,'cgm::FRAM_data::FRAM_data(const std::shared_ptr&lt; FactoryCalibration &gt; calibration, const std::vector&lt; uint8_t &gt; &amp;fram)']]],
+  ['fram_5frecord_3',['fram_record',['../structcgm_1_1fram__record.html',1,'cgm::fram_record'],['../structcgm_1_1fram__record.html#a3bedf76ff463f15bc3308da837d1f26a',1,'cgm::fram_record::fram_record()=default'],['../structcgm_1_1fram__record.html#a02a471000d63581b31ddc965ff1a4b86',1,'cgm::fram_record::fram_record(const std::shared_ptr&lt; FactoryCalibration &gt; calibration, std::vector&lt; uint8_t &gt; record)']]]
+];
