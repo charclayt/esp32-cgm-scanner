@@ -1,3 +1,11 @@
+/*
+ * Code adapted from:
+ * https://github.com/gui-dos/DiaBLE
+ * https://github.com/creepymonster/GlucoseDirect
+ * https://github.com/j-kaltes/Juggluco
+ * https://github.com/NightscoutFoundation/xDrip
+*/
+
 #include <common.hpp>
 
 #include <cmath>

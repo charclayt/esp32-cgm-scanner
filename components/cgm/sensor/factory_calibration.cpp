@@ -1,3 +1,9 @@
+/*
+ * Code adapted from:
+ * https://github.com/creepymonster/GlucoseDirect
+ * https://github.com/JohanDegraeve/xdripswift
+*/
+
 #include <sensor/factory_calibration.hpp>
 
 #include <common.hpp>
